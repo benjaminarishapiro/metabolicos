@@ -194,7 +194,7 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;hei
   <div>
     <h1>MetabolicOS</h1>
     <div class="date-badge" id="headerDate"></div>
-    <div style="font-size:13px;color:rgba(255,255,255,0.4);margin-top:1px">v5.9 · Apr 14, 2026 8:38 PM PT</div>
+    <div style="font-size:13px;color:rgba(255,255,255,0.4);margin-top:1px">v5.10 · Apr 14, 2026 8:46 PM PT</div>
   </div>
   <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
     <span class="phase-pill" id="headerPhase">Phase 1</span>
@@ -617,16 +617,14 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;hei
         </div>
       </div>
       <div style="padding:10px 0;border-bottom:1px solid var(--border)">
-        <div class="med-name">Enclomiphene</div>
-        <div class="med-sub">Daily · SERM — stimulates natural testosterone production</div>
-      </div>
-      <div style="padding:10px 0;border-bottom:1px solid var(--border)">
-        <div class="med-name">Anastrozole</div>
-        <div class="med-sub">Daily · Aromatase inhibitor — watch for low estradiol symptoms</div>
-      </div>
-      <div style="padding:10px 0">
-        <div class="med-name">Methylcobalamin (B12)</div>
-        <div class="med-sub">Daily · Active B12 — common with GLP-1 medications</div>
+        <div class="med-name">Enclomiphene · Anastrozole · Methylcobalamin B12</div>
+        <div class="med-sub">Combined pill · Monday, Wednesday, Friday only</div>
+        <div style="display:flex;gap:6px;margin-top:7px">
+          <span style="background:var(--cream);border-radius:12px;padding:3px 10px;font-size:12px;font-weight:600;color:var(--navy)">Mon</span>
+          <span style="background:var(--cream);border-radius:12px;padding:3px 10px;font-size:12px;font-weight:600;color:var(--navy)">Wed</span>
+          <span style="background:var(--cream);border-radius:12px;padding:3px 10px;font-size:12px;font-weight:600;color:var(--navy)">Fri</span>
+        </div>
+        <div style="margin-top:7px;font-size:12px;color:var(--text-light)">Enclomiphene: SERM · Anastrozole: aromatase inhibitor — watch for low estradiol · B12: active form</div>
       </div>
       <div class="decision-box amber mt-12">
         <div class="decision-title">⚠️ Estradiol Watch</div>
@@ -1060,20 +1058,23 @@ function openShakeQuickLog(){showScreen('meals',document.getElementById('nav-mea
 
 // ============ MEDICATIONS CHECKLIST ============
 const MEDS=[
-  {id:'zepbound',name:'Zepbound',sub:'Check injection day',weekly:true},
-  {id:'enclomiphene',name:'Enclomiphene',sub:'Daily oral'},
-  {id:'anastrozole',name:'Anastrozole',sub:'Daily oral — monitor estradiol symptoms'},
-  {id:'methylcobalamin',name:'Methylcobalamin B12',sub:'Daily oral'}
+  {id:'zepbound',name:'Zepbound',sub:'Weekly injection · GLP-1/GIP agonist'},
+  {id:'combo',name:'Enclomiphene · Anastrozole · B12',sub:'Combined pill · Mon / Wed / Fri only',mwf:true}
 ];
 function renderMedChecklist(){
   const today=todayKey();
   const medLog=DB.get('medlog')||{};
   const todayMeds=medLog[today]||{};
-  document.getElementById('medChecklist').innerHTML=MEDS.map(m=>`
-    <div class="med-check">
-      <div><div class="med-name">${m.name}</div><div class="med-sub">${m.sub}</div></div>
-      <button class="toggle-btn ${todayMeds[m.id]?'on':''}" id="med-toggle-${m.id}" onclick="toggleMed('${m.id}')"></button>
-    </div>`).join('');
+  const dowToday=new Date().getDay(); // 0=Sun,1=Mon,2=Tue,3=Wed,4=Thu,5=Fri,6=Sat
+  const isMWF=dowToday===1||dowToday===3||dowToday===5;
+  document.getElementById('medChecklist').innerHTML=MEDS.map(m=>{
+    const notToday=m.mwf&&!isMWF;
+    const subText=notToday?m.sub+' — <span style="color:var(--warning)">not today</span>':m.sub;
+    return `<div class="med-check" style="opacity:${notToday?'0.5':'1'}">
+      <div><div class="med-name">${m.name}</div><div class="med-sub">${subText}</div></div>
+      <button class="toggle-btn ${todayMeds[m.id]?'on':''}" id="med-toggle-${m.id}" onclick="toggleMed('${m.id}')" ${notToday?'disabled':''} style="${notToday?'opacity:0.4':''}"></button>
+    </div>`;
+  }).join('');
 }
 function toggleMed(id){
   const today=todayKey();
