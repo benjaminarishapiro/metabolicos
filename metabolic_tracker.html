@@ -188,7 +188,7 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;hei
   <div>
     <h1>MetabolicOS</h1>
     <div class="date-badge" id="headerDate"></div>
-    <div style="font-size:13px;color:rgba(255,255,255,0.4);margin-top:1px">v5.6 · 2026-04-15 01:14</div>
+    <div style="font-size:13px;color:rgba(255,255,255,0.4);margin-top:1px">v5.7 · 2026-04-15 01:43</div>
   </div>
   <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
     <span class="phase-pill" id="headerPhase">Phase 1</span>
@@ -922,7 +922,7 @@ function _syncFromCloud(callback) {
     });
   });
 }
-const todayKey=()=>new Date().toISOString().split('T')[0];
+const todayKey=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');};
 
 function getSettings(){
   return DB.get('settings')||{phase:'1',startWeight:273,week:1,protein:210,carbs:175,fat:70,calories:2100,steps:8000,apiKey:''};
