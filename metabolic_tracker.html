@@ -22,6 +22,12 @@
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--text);min-height:100vh;padding-bottom:100px;font-size:16px}
 .app-header{background:var(--navy);color:var(--white);padding:14px 20px 10px;position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between}
+.macro-bar{position:sticky;top:62px;z-index:99;background:var(--navy-mid);padding:8px 14px;display:flex;gap:8px;justify-content:space-between}
+.macro-bubble{background:var(--navy-light);border-radius:20px;padding:5px 12px;display:flex;flex-direction:column;align-items:center;flex:1}
+.macro-bubble .mb-val{font-family:'DM Serif Display',serif;font-size:17px;color:var(--white);line-height:1.1}
+.macro-bubble .mb-lbl{font-size:11px;color:rgba(255,255,255,0.6);font-weight:600;text-transform:uppercase;letter-spacing:0.5px}
+.macro-bubble.over .mb-val{color:#ff6b6b}
+.macro-bubble.done .mb-val{color:#6bffb0}
 .app-header h1{font-family:'DM Serif Display',serif;font-size:23px;color:var(--gold-light)}
 .app-header .date-badge{font-size:23px;color:rgba(255,255,255,0.55);margin-top:2px}
 .phase-pill{background:var(--gold);color:var(--navy);font-size:23px;font-weight:600;padding:4px 10px;border-radius:20px}
@@ -188,11 +194,31 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;hei
   <div>
     <h1>MetabolicOS</h1>
     <div class="date-badge" id="headerDate"></div>
-    <div style="font-size:13px;color:rgba(255,255,255,0.4);margin-top:1px">v5.7 · 2026-04-15 01:43</div>
+    <div style="font-size:13px;color:rgba(255,255,255,0.4);margin-top:1px">v5.8 · 2026-04-15 02:57</div>
   </div>
   <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
     <span class="phase-pill" id="headerPhase">Phase 1</span>
     <button onclick="manualSync(this)" id="syncBtn" style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.25);color:white;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap">☁️ Sync</button>
+  </div>
+</div>
+
+<!-- Sticky macro remaining bar -->
+<div class="macro-bar">
+  <div class="macro-bubble" id="mb-protein">
+    <div class="mb-val" id="mb-protein-val">210g</div>
+    <div class="mb-lbl">Protein</div>
+  </div>
+  <div class="macro-bubble" id="mb-carbs">
+    <div class="mb-val" id="mb-carbs-val">175g</div>
+    <div class="mb-lbl">Carbs</div>
+  </div>
+  <div class="macro-bubble" id="mb-fat">
+    <div class="mb-val" id="mb-fat-val">70g</div>
+    <div class="mb-lbl">Fat</div>
+  </div>
+  <div class="macro-bubble" id="mb-cal">
+    <div class="mb-val" id="mb-cal-val">2100</div>
+    <div class="mb-lbl">Calories</div>
   </div>
 </div>
 
@@ -1313,6 +1339,19 @@ function refreshToday(){
   setRem('rem-carbs',totals.carbs,s.carbs,'g');
   setRem('rem-fat',totals.fat,s.fat,'g');
   setRem('rem-cal',totals.calories,s.calories,'');
+  // Update sticky macro bar
+  var updateBubble=function(id,valId,val,target,sfx){
+    var rem=Math.round(target-val);
+    var el=document.getElementById(id);
+    var velEl=document.getElementById(valId);
+    if(!el||!velEl)return;
+    el.className='macro-bubble'+(rem<=0?' done':val>target?' over':'');
+    velEl.textContent=rem<=0?'✓':(rem+sfx);
+  };
+  updateBubble('mb-protein','mb-protein-val',totals.protein,s.protein,'g');
+  updateBubble('mb-carbs','mb-carbs-val',totals.carbs,s.carbs,'g');
+  updateBubble('mb-fat','mb-fat-val',totals.fat,s.fat,'g');
+  updateBubble('mb-cal','mb-cal-val',totals.calories,s.calories,'');
   const setBar=(id,lblId,val,target,sfx)=>{
     const pct=Math.min(100,(val/target)*100);
     document.getElementById(id).style.width=pct+'%';
