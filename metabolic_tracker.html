@@ -194,7 +194,7 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;hei
   <div>
     <h1>MetabolicOS</h1>
     <div class="date-badge" id="headerDate"></div>
-    <div style="font-size:13px;color:rgba(255,255,255,0.4);margin-top:1px">v5.8 · 2026-04-15 02:57</div>
+    <div style="font-size:13px;color:rgba(255,255,255,0.4);margin-top:1px">v5.9 · 2026-04-15 03:09</div>
   </div>
   <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
     <span class="phase-pill" id="headerPhase">Phase 1</span>
@@ -1342,11 +1342,20 @@ function refreshToday(){
   // Update sticky macro bar
   var updateBubble=function(id,valId,val,target,sfx){
     var rem=Math.round(target-val);
+    var over=Math.round(val-target);
     var el=document.getElementById(id);
     var velEl=document.getElementById(valId);
     if(!el||!velEl)return;
-    el.className='macro-bubble'+(rem<=0?' done':val>target?' over':'');
-    velEl.textContent=rem<=0?'✓':(rem+sfx);
+    if(over>5){
+      el.className='macro-bubble over';
+      velEl.textContent='+'+over+sfx;
+    } else if(rem<=0){
+      el.className='macro-bubble done';
+      velEl.textContent='✓';
+    } else {
+      el.className='macro-bubble';
+      velEl.textContent=rem+sfx;
+    }
   };
   updateBubble('mb-protein','mb-protein-val',totals.protein,s.protein,'g');
   updateBubble('mb-carbs','mb-carbs-val',totals.carbs,s.carbs,'g');
