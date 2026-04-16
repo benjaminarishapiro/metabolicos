@@ -20,9 +20,9 @@
   --radius:16px; --radius-sm:10px;
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--text);min-height:100vh;padding-bottom:100px;font-size:16px}
-.app-header{background:var(--navy);color:var(--white);padding:14px 20px 10px;position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between}
-.macro-bar{position:sticky;top:62px;z-index:99;background:var(--navy-mid);padding:8px 14px;display:flex;gap:8px;justify-content:space-between}
+body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--text);min-height:100vh;padding-bottom:100px;font-size:16px;max-width:800px;margin:0 auto;position:relative}
+.app-header{background:var(--navy);color:var(--white);padding:14px 20px 10px;position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;max-width:800px;width:100%}
+.macro-bar{position:sticky;top:62px;z-index:99;background:var(--navy-mid);padding:8px 14px;display:flex;gap:8px;justify-content:space-between;max-width:800px;width:100%}
 .macro-bubble{background:var(--navy-light);border-radius:20px;padding:5px 12px;display:flex;flex-direction:column;align-items:center;flex:1}
 .macro-bubble .mb-val{font-family:'DM Serif Display',serif;font-size:17px;color:var(--white);line-height:1.1}
 .macro-bubble .mb-lbl{font-size:11px;color:rgba(255,255,255,0.6);font-weight:600;text-transform:uppercase;letter-spacing:0.5px}
@@ -31,7 +31,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--text);
 .app-header h1{font-family:'DM Serif Display',serif;font-size:23px;color:var(--gold-light)}
 .app-header .date-badge{font-size:23px;color:rgba(255,255,255,0.55);margin-top:2px}
 .phase-pill{background:var(--gold);color:var(--navy);font-size:23px;font-weight:600;padding:4px 10px;border-radius:20px}
-.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:var(--white);border-top:1px solid var(--border);display:flex;z-index:100;padding-bottom:env(safe-area-inset-bottom)}
+.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:800px;background:var(--white);border-top:1px solid var(--border);display:flex;z-index:100;padding-bottom:env(safe-area-inset-bottom)}
 .nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;padding:9px 2px 7px;border:none;background:none;color:var(--text-light);font-size:16px;font-weight:500;cursor:pointer;gap:3px;font-family:'DM Sans',sans-serif}
 .nav-btn svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .nav-btn.active{color:var(--navy)}
@@ -206,11 +206,14 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;hei
   <div>
     <h1>MetabolicOS</h1>
     <div class="date-badge" id="headerDate"></div>
-    <div style="font-size:13px;color:rgba(255,255,255,0.4);margin-top:1px">v5.12 · Apr 14, 2026 9:02 PM PT</div>
+    <div style="font-size:13px;color:rgba(255,255,255,0.4);margin-top:1px">v5.14 · Apr 16, 2026 7:23 AM PT</div>
   </div>
   <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
     <span class="phase-pill" id="headerPhase">Phase 1</span>
+    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px">
     <button onclick="manualSync(this)" id="syncBtn" style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.25);color:white;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap">☁️ Sync</button>
+    <span id="lastSynced" style="font-size:10px;color:rgba(255,255,255,0.4)">Never synced</span>
+  </div>
   </div>
 </div>
 
@@ -246,7 +249,10 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;hei
   <!-- Streak -->
   <div class="card">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-      <div class="card-subtitle" style="margin:0">This Week</div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="card-subtitle" style="margin:0">Protein Streak</div>
+        <button onclick="goToToday()" style="background:var(--navy);color:var(--white);border:none;border-radius:14px;padding:4px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif">Today</button>
+      </div>
       <span id="streakCount" class="badge badge-green">0 day streak</span>
     </div>
     <div class="streak-bar" id="streakBar"></div>
@@ -1266,17 +1272,17 @@ function saveMeal(){
       const orig=meals[idx];
       meals[idx]={...orig,date:mealDate,name,type:document.getElementById('meal-type').value,protein,carbs,fat,calories:Math.round(protein*4+carbs*4+fat*9),notes:document.getElementById('meal-notes').value,photo:currentPhotoBase64?'data:image/jpeg;base64,'+currentPhotoBase64:orig.photo};
     }
-    DB.set('meals',meals);closeMealModal();refreshToday();renderAllMeals();showToast('Meal updated ✓');
+    DB.set('meals',meals);closeMealModal();refreshToday();renderAllMeals();renderStreak();showToast('Meal updated ✓');
   } else {
     const meal={id:Date.now(),date:mealDate,time:new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),name,type:document.getElementById('meal-type').value,protein,carbs,fat,calories:Math.round(protein*4+carbs*4+fat*9),notes:document.getElementById('meal-notes').value,photo:currentPhotoBase64?'data:image/jpeg;base64,'+currentPhotoBase64:null};
     meals.unshift(meal);DB.set('meals',meals);
-    closeMealModal();refreshToday();renderAllMeals();showToast('Meal saved ✓');
+    closeMealModal();refreshToday();renderAllMeals();renderStreak();showToast('Meal saved ✓');
   }
 }
 function deleteMeal(id){
   if(!confirm('Delete this meal?'))return;
   DB.set('meals',(DB.get('meals')||[]).filter(m=>m.id!==id));
-  refreshToday();renderAllMeals();showToast('Deleted');
+  refreshToday();renderAllMeals();renderStreak();showToast('Deleted');
 }
 function renderMealItem(m){
   const icons={breakfast:'🌅',lunch:'☀️',snack:'🍎',dinner:'🌙',other:'🍽'};
@@ -1331,6 +1337,15 @@ function loadTodayCheckin(){
 }
 
 // ============ TODAY REFRESH ============
+function goToToday(){
+  selectDay(todayKey());
+  setTimeout(function(){
+    var bar=document.getElementById('streakBar');
+    var todayEl=bar&&bar.querySelector('.streak-day.today');
+    if(todayEl)todayEl.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});
+  },50);
+}
+
 function selectDay(key){
   _viewingDate=key;
   renderStreak();
@@ -1434,28 +1449,47 @@ function refreshToday(){
 // Track which date the Today view is showing
 var _viewingDate = todayKey();
 
+// Returns true if protein target was hit (within 10g) for a given date key
+function hitProteinTarget(dateKey){
+  const s=getSettings();
+  const meals=DB.get('meals')||[];
+  const dayMeals=meals.filter(m=>(m.date||todayKey())===dateKey);
+  const totalProtein=dayMeals.reduce(function(acc,m){return acc+(m.protein||0);},0);
+  return totalProtein>0&&(s.protein-totalProtein)<=10;
+}
+
+// Calculate current protein streak (consecutive days ending today hitting target within 10g)
+function calcProteinStreak(){
+  const today=new Date();
+  let streak=0;
+  for(let i=0;i<365;i++){
+    const d=new Date(today);d.setDate(d.getDate()-i);
+    const key=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    if(hitProteinTarget(key)){streak++;}
+    else if(i>0){break;} // Allow today to be incomplete, break on any past miss
+  }
+  return streak;
+}
+
 function renderStreak(){
-  const checkins=DB.get('checkins')||{};
   const meals=DB.get('meals')||[];
   const dayLabels=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
   const today=new Date();
   const tKey=todayKey();
-  let streak=0;
   const bar=document.getElementById('streakBar');bar.innerHTML='';
-  // Build 5 weeks back + current week (35 days total) for horizontal scroll
+  // Build 5 weeks back + current week for horizontal scroll
   const dayOfWeek=today.getDay();
   const daysFromMon=dayOfWeek===0?6:dayOfWeek-1;
-  const totalDays=28+daysFromMon+7; // 4 past weeks + current week + rest of week
+  const totalDays=28+daysFromMon+7;
   for(let i=-(totalDays-7);i<7;i++){
     const d=new Date(today);d.setDate(d.getDate()-daysFromMon+i);
     const key=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
     const isToday=key===tKey;
     const isFuture=d>today;
-    const hasData=!isFuture&&(checkins[key]||meals.some(m=>m.date===key));
+    const proteinHit=!isFuture&&hitProteinTarget(key);
     const isSelected=key===_viewingDate;
-    if(hasData&&!isFuture)streak++;
-    const dayIdx=(d.getDay()+6)%7; // Mon=0
-    let cls=(isFuture||(!hasData&&!isToday))?'future':isToday?'today':hasData?'logged':'';
+    const dayIdx=(d.getDay()+6)%7;
+    let cls=(isFuture||(!proteinHit&&!isToday))?'future':isToday?'today':proteinHit?'logged':'';
     if(isSelected&&!isToday)cls+=' selected';
     const dateStr=(d.getMonth()+1)+'/'+d.getDate();
     bar.innerHTML+=`<div class="streak-day ${cls}" onclick="selectDay('${key}')" title="${key}">
@@ -1463,7 +1497,7 @@ function renderStreak(){
       <div class="sd-date">${dateStr}</div>
     </div>`;
   }
-  document.getElementById('streakCount').textContent=streak+' day streak';
+  const streak=calcProteinStreak();document.getElementById('streakCount').textContent=streak+' day streak';
 }
 
 // ============ WEEKLY CHECK-IN ============
@@ -1853,12 +1887,24 @@ function showToast(msg){
 }
 
 // ============ CLOUD SYNC ============
+function updateLastSynced(){
+  var el=document.getElementById('lastSynced');
+  if(!el)return;
+  var now=new Date();
+  var h=now.getHours();var m=now.getMinutes();
+  var ampm=h>=12?'pm':'am';h=h%12||12;
+  var mStr=String(m).padStart(2,'0');
+  el.textContent='Synced '+h+':'+mStr+ampm;
+}
+
 function manualSync(btn) {
   var b = btn || document.getElementById('syncBtn');
   if (b) { b.textContent = '⏳ Syncing...'; b.disabled = true; }
   _syncFromCloud(function() {
     if (typeof refreshToday === 'function') refreshToday();
-    if (b) { b.textContent = '✓ Synced'; setTimeout(function(){ b.textContent='☁️ Sync'; b.disabled=false; }, 2000); }
+    if (typeof renderStreak === 'function') renderStreak();
+    updateLastSynced();
+    if (b) { b.textContent = '☁️ Sync'; b.disabled=false; }
     showToast('Synced from cloud ✓');
   });
 }
