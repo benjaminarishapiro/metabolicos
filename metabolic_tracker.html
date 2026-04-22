@@ -206,7 +206,7 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;hei
   <div>
     <h1>MetabolicOS</h1>
     <div class="date-badge" id="headerDate"></div>
-    <div style="font-size:13px;color:rgba(255,255,255,0.4);margin-top:1px">v5.22 · Apr 22, 2026 2:11 PM PT</div>
+    <div style="font-size:13px;color:rgba(255,255,255,0.4);margin-top:1px">v5.23 · Apr 22, 2026 2:28 PM PT</div>
   </div>
   <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
     <span class="phase-pill" id="headerPhase">Phase 1</span>
@@ -966,8 +966,19 @@ if (!_deviceId) { _deviceId = Math.random().toString(36).slice(2); localStorage.
 
 var DB = {
   get: function(k) { try { return JSON.parse(localStorage.getItem(k)); } catch(e) { return null; } },
-  set: function(k, v) { localStorage.setItem(k, JSON.stringify(v)); _fbWrite(k, v); },
-  del: function(k) { localStorage.removeItem(k); _fbDel(k); }
+  set: function(k, v) {
+    localStorage.setItem(k, JSON.stringify(v));
+    _fbWrite(k, v);
+    // Touch heartbeat so other devices know to sync
+    if(k !== '_heartbeat' && k !== '_lastHb') {
+      _fbWrite('_heartbeat', {device: _deviceId, at: Date.now()});
+    }
+  },
+  del: function(k) {
+    localStorage.removeItem(k);
+    _fbDel(k);
+    _fbWrite('_heartbeat', {device: _deviceId, at: Date.now()});
+  }
 };
 
 var _DATA_KEYS = ['settings','meals','checkins','weeklyCheckins','workouts','labs','refeeds','symlog','medlog','doctorNotes','carbHistory','carbCurrentWeek','zepbound-next'];
@@ -2090,25 +2101,50 @@ function init(){
 }
 init();
 
-// Sync from Firebase in background after app is rendered
-// Uses setTimeout so it never blocks the UI
-setTimeout(function() {
-  _syncFromCloud(function() {
-    // Re-render today view with any new cloud data
-    if (typeof refreshToday === 'function') refreshToday();
-    // Poll for updates from other devices every 30s
-    setInterval(function() {
-      _fbRead('_heartbeat').then(function(hb) {
-        if (!hb || !hb.device || hb.device === _deviceId) return;
-        if (String(hb.at) === localStorage.getItem('_lastHb')) return;
-        localStorage.setItem('_lastHb', String(hb.at));
-        _syncFromCloud(function() {
-          if (typeof refreshToday === 'function') refreshToday();
-        });
+// ---- Auto sync on load + polling ----
+(function() {
+  var si = document.getElementById('syncStatus');
+
+  function doSync(callback) {
+    var done = false;
+    var timeout = setTimeout(function() {
+      if(done) return;
+      done = true;
+      if(si) { si.textContent = '⚡ Offline'; si.style.color = 'rgba(255,200,50,0.9)'; }
+      if(callback) callback(false);
+    }, 8000);
+    _syncFromCloud(function() {
+      if(done) return;
+      done = true;
+      clearTimeout(timeout);
+      if(si) { si.textContent = '☁️ Synced'; si.style.color = 'rgba(100,255,150,0.9)'; }
+      updateLastSynced();
+      if(callback) callback(true);
+    });
+  }
+
+  // Initial sync 500ms after render
+  setTimeout(function() {
+    if(si) { si.textContent = 'Syncing...'; si.style.color = 'rgba(255,200,50,0.9)'; }
+    doSync(function(ok) {
+      if(ok) { refreshToday(); renderStreak(); }
+    });
+  }, 500);
+
+  // Poll every 30s for changes from other devices
+  setInterval(function() {
+    _fbRead('_heartbeat').then(function(hb) {
+      if(!hb || !hb.device || hb.device === _deviceId) return;
+      if(String(hb.at) === localStorage.getItem('_lastHb')) return;
+      localStorage.setItem('_lastHb', String(hb.at));
+      doSync(function(ok) {
+        if(ok) {
+          refreshToday();
+          renderStreak();
+          if(si) { si.textContent = '☁️ Updated'; si.style.color = 'rgba(100,255,150,0.9)'; }
+          setTimeout(function(){ updateLastSynced(); }, 100);
+        }
       });
-    }, 30000);
-  });
-}, 500);
-</script>
-</body>
-</html>
+    });
+  }, 30000);
+})();
