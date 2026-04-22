@@ -206,7 +206,7 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;hei
   <div>
     <h1>MetabolicOS</h1>
     <div class="date-badge" id="headerDate"></div>
-    <div style="font-size:13px;color:rgba(255,255,255,0.4);margin-top:1px">v5.23 · Apr 22, 2026 2:33 PM PT</div>
+    <div style="font-size:13px;color:rgba(255,255,255,0.4);margin-top:1px">v5.24 · Apr 22, 2026 2:40 PM PT</div>
   </div>
   <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
     <span class="phase-pill" id="headerPhase">Phase 1</span>
@@ -986,6 +986,14 @@ function _syncFromCloud(callback) {
     var v = DB.get(k);
     return v && (Array.isArray(v) ? v.length > 0 : typeof v === 'object' ? Object.keys(v).length > 0 : !!v);
   });
+  function oneDone() {
+    pending--;
+    if (pending === 0) {
+      if (si) { si.textContent = '☁️ Synced'; si.style.color = 'rgba(100,255,150,0.9)'; }
+      updateLastSynced();
+      if (callback) callback();
+    }
+  }
   _DATA_KEYS.forEach(function(k) {
     _fbRead(k).then(function(cloud) {
       if (cloud !== null) {
@@ -994,11 +1002,10 @@ function _syncFromCloud(callback) {
         var local = DB.get(k);
         if (local !== null && local !== undefined) _fbWrite(k, local);
       }
-      pending--;
-      if (pending === 0) {
-        if (si) { si.textContent = '☁️ Synced'; si.style.color = 'rgba(100,255,150,0.9)'; }
-        if (callback) callback();
-      }
+      oneDone();
+    }).catch(function() {
+      // If one key fails, still count it done so callback fires
+      oneDone();
     });
   });
 }
