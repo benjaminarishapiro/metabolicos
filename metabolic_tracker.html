@@ -206,7 +206,7 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;hei
   <div>
     <h1>MetabolicOS</h1>
     <div class="date-badge" id="headerDate"></div>
-    <div style="font-size:13px;color:rgba(255,255,255,0.4);margin-top:1px">v5.14 · Apr 16, 2026 7:23 AM PT</div>
+    <div style="font-size:13px;color:rgba(255,255,255,0.4);margin-top:1px">v5.16 · Apr 22, 2026 12:57 PM PT</div>
   </div>
   <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
     <span class="phase-pill" id="headerPhase">Phase 1</span>
@@ -387,7 +387,7 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;hei
 <div class="screen" id="screen-meals">
   <div class="tab-bar">
     <button class="tab-btn active" onclick="showMealsTab('log',this)">Meal Log</button>
-    <button class="tab-btn" onclick="showMealsTab('shakes',this)">Shake Recipes</button>
+    <button class="tab-btn" onclick="showMealsTab('fav',this)">⭐ Favorites</button>
   </div>
 
   <div id="meals-tab-log">
@@ -400,10 +400,13 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;hei
     </div>
   </div>
 
-  <div id="meals-tab-shakes" style="display:none">
+  <div id="meals-tab-fav" style="display:none">
     <div class="card">
-      <div class="card-title">Morning Shake Recipes</div>
-      <div class="text-sm mb-12">Tap any shake to instantly log it to today's meals.</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div class="card-title" style="margin:0">⭐ Favorites</div>
+        <button class="btn btn-gold btn-sm" onclick="openAddFavorite()">+ Add</button>
+      </div>
+      <div class="text-sm mb-12">Tap any item to log it instantly.</div>
       <div id="shakeList"></div>
     </div>
   </div>
@@ -792,6 +795,10 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;hei
       <div class="form-group"><label>Fat (g)</label><input type="number" id="meal-fat" placeholder="0"></div>
     </div>
     <div class="form-group"><label>Notes</label><textarea id="meal-notes" placeholder="Restaurant, ingredients, notes..." style="min-height:55px"></textarea></div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+      <input type="checkbox" id="save-as-favorite" style="width:18px;height:18px;cursor:pointer">
+      <label for="save-as-favorite" style="font-size:14px;font-weight:600;color:var(--navy);cursor:pointer;margin:0">⭐ Save as Favorite</label>
+    </div>
     <div class="row-2"><button class="btn btn-outline" onclick="closeMealModal()">Cancel</button><button class="btn btn-primary" onclick="saveMeal()">Save Meal</button></div>
   </div>
 </div>
@@ -906,6 +913,28 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;hei
 
 <div class="toast" id="toast"></div>
 
+<!-- ADD FAVORITE MODAL -->
+<div class="modal-overlay" id="favModal">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="favModalTitle">Add Favorite</div>
+    <input type="hidden" id="fav-edit-id" value="">
+    <input type="hidden" id="fav-is-builtin" value="">
+    <div class="form-group"><label>Name</label><input type="text" id="fav-name" placeholder="e.g. Panda Express Teriyaki Plate"></div>
+    <div class="form-group"><label>Emoji (optional)</label><input type="text" id="fav-emoji" placeholder="🍽" maxlength="2" style="width:60px;display:inline-block"></div>
+    <div class="row-3">
+      <div class="form-group"><label>Protein (g)</label><input type="number" id="fav-protein" placeholder="0"></div>
+      <div class="form-group"><label>Carbs (g)</label><input type="number" id="fav-carbs" placeholder="0"></div>
+      <div class="form-group"><label>Fat (g)</label><input type="number" id="fav-fat" placeholder="0"></div>
+    </div>
+    <div class="form-group"><label>Notes / Description</label><textarea id="fav-notes" placeholder="Ingredients, restaurant, preparation notes..." style="min-height:60px"></textarea></div>
+    <div class="row-2" id="fav-btn-row">
+      <button class="btn btn-outline" onclick="closeFavModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveFavModal(false)">Save Favorite</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ============ DATA LAYER ============
 const _FBP = 'metabolicos-9c0bf';
@@ -937,7 +966,14 @@ if (!_deviceId) { _deviceId = Math.random().toString(36).slice(2); localStorage.
 
 var DB = {
   get: function(k) { try { return JSON.parse(localStorage.getItem(k)); } catch(e) { return null; } },
-  set: function(k, v) { localStorage.setItem(k, JSON.stringify(v)); _fbWrite(k, v); },
+  set: function(k, v) {
+    localStorage.setItem(k, JSON.stringify(v));
+    _fbWrite(k, v);
+    // Touch heartbeat so other devices know to sync
+    if(k !== '_heartbeat' && k !== '_lastHb') {
+      _fbWrite('_heartbeat', {device:_deviceId, at:Date.now()});
+    }
+  },
   del: function(k) { localStorage.removeItem(k); _fbDel(k); }
 };
 
@@ -1012,12 +1048,13 @@ function showScreen(name,btn){
   window.scrollTo(0,0);
 }
 function showMealsTab(tab,btn){
-  ['log','shakes'].forEach(t=>{document.getElementById('meals-tab-'+t).style.display='none'});
-  document.querySelectorAll('#screen-meals .tab-btn').forEach(b=>b.classList.remove('active'));
-  document.getElementById('meals-tab-'+tab).style.display='block';
-  btn.classList.add('active');
+  ['log','fav','shakes'].forEach(function(t){var el=document.getElementById('meals-tab-'+t);if(el)el.style.display='none';});
+  document.querySelectorAll('#screen-meals .tab-btn').forEach(function(b){b.classList.remove('active');});
+  var tabEl=document.getElementById('meals-tab-'+tab)||document.getElementById('meals-tab-fav');
+  if(tabEl)tabEl.style.display='block';
+  if(btn)btn.classList.add('active');
   if(tab==='log')renderAllMeals();
-  if(tab==='shakes')renderShakes();
+  if(tab==='fav'||tab==='shakes')renderFavorites();
 }
 function showWeeklyTab(tab,btn){
   ['checkin','carbtrack','history'].forEach(t=>{document.getElementById('weekly-tab-'+t).style.display='none'});
@@ -1043,924 +1080,72 @@ function showMedicalTab(tab,btn){
 }
 
 // ============ SHAKE DATA ============
-const SHAKES=[
-  {name:'Foundation Shake (Vanilla)',protein:58,carbs:60,fat:4,calories:490,emoji:'🥛',ingredients:'2 scoops vanilla whey · 1 cup nonfat Greek yogurt · 1 cup unsweetened almond milk · 1 banana · ice'},
-  {name:'Chocolate Banana',protein:60,carbs:65,fat:5,calories:530,emoji:'🍫',ingredients:'2 scoops chocolate whey · 1 cup Greek yogurt · 1 cup skim milk · 1 tablespoon cocoa · 1 frozen banana · ice'},
-  {name:'Strawberry Blueberry',protein:56,carbs:70,fat:3,calories:500,emoji:'🍓',ingredients:'2 scoops vanilla whey · 1 cup Greek yogurt · 1 cup frozen strawberries · ½ cup blueberries · ½ cup OJ · ½ cup water'},
-  {name:'Oatmeal Cookie (High Carb)',protein:62,carbs:95,fat:5,calories:660,emoji:'🍪',ingredients:'2 scoops vanilla whey · 1 cup Greek yogurt · ½ cup rolled oats · 1 cup skim milk · 1 banana · ½ tsp cinnamon · ice'},
-  {name:'Mango Pineapple Tropical',protein:55,carbs:72,fat:3,calories:500,emoji:'🥭',ingredients:'2 scoops vanilla whey · 1 cup Greek yogurt · 1 cup frozen mango · ½ cup pineapple juice · ½ cup water · ice'},
-  {name:'Coffee Protein',protein:58,carbs:62,fat:4,calories:500,emoji:'☕',ingredients:'2 scoops vanilla whey · 1 cup Greek yogurt · 1 cup cold brew · 1 frozen banana · ½ cup skim milk · ice'},
-  {name:'Apple Cinnamon',protein:57,carbs:75,fat:3,calories:510,emoji:'🍎',ingredients:'2 scoops vanilla whey · 1 cup Greek yogurt · 1 cup apple juice · 1 apple chopped · ½ tsp cinnamon · ice'},
-  {name:'Maximum Protein (72g)',protein:72,carbs:72,fat:4,calories:580,emoji:'💪',ingredients:'2 scoops vanilla whey · 1 cup Greek yogurt · ½ cup cottage cheese · 1 cup skim milk · 1 frozen banana · 1 cup frozen strawberries · ice'}
+const BUILTIN_FAVORITES=[
+  {id:'bf1',name:'Foundation Shake (Vanilla)',protein:58,carbs:60,fat:4,calories:490,emoji:'🥛',notes:'2 scoops vanilla whey · 1 cup nonfat Greek yogurt · 1 cup unsweetened almond milk · 1 banana · ice',builtin:true},
+  {id:'bf2',name:'Chocolate Banana Shake',protein:60,carbs:65,fat:5,calories:530,emoji:'🍫',notes:'2 scoops chocolate whey · 1 cup Greek yogurt · 1 cup skim milk · 1 tablespoon cocoa · 1 frozen banana · ice',builtin:true},
+  {id:'bf3',name:'Strawberry Blueberry Shake',protein:56,carbs:70,fat:3,calories:500,emoji:'🍓',notes:'2 scoops vanilla whey · 1 cup Greek yogurt · 1 cup frozen strawberries · ½ cup blueberries · ½ cup OJ',builtin:true},
+  {id:'bf4',name:'Oatmeal Cookie Shake (High Carb)',protein:62,carbs:95,fat:5,calories:660,emoji:'🍪',notes:'2 scoops vanilla whey · 1 cup Greek yogurt · ½ cup rolled oats · 1 cup skim milk · 1 banana · ½ tsp cinnamon',builtin:true},
+  {id:'bf5',name:'Mango Pineapple Shake',protein:55,carbs:72,fat:3,calories:500,emoji:'🥭',notes:'2 scoops vanilla whey · 1 cup Greek yogurt · 1 cup frozen mango · ½ cup pineapple juice · ½ cup water',builtin:true},
+  {id:'bf6',name:'Coffee Protein Shake',protein:58,carbs:62,fat:4,calories:500,emoji:'☕',notes:'2 scoops vanilla whey · 1 cup Greek yogurt · 1 cup cold brew · 1 frozen banana · ½ cup skim milk',builtin:true},
+  {id:'bf7',name:'Apple Cinnamon Shake',protein:57,carbs:75,fat:3,calories:510,emoji:'🍎',notes:'2 scoops vanilla whey · 1 cup Greek yogurt · 1 cup apple juice · 1 apple chopped · ½ tsp cinnamon',builtin:true},
+  {id:'bf8',name:'Maximum Protein Shake (72g)',protein:72,carbs:72,fat:4,calories:580,emoji:'💪',notes:'2 scoops vanilla whey · 1 cup Greek yogurt · ½ cup cottage cheese · 1 cup skim milk · 1 frozen banana · 1 cup strawberries',builtin:true}
 ];
-function renderShakes(){
-  document.getElementById('shakeList').innerHTML=SHAKES.map((s,i)=>`
-    <div class="shake-card" onclick="quickLogShake(${i})">
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <div>
-          <div class="shake-card-name">${s.emoji} ${s.name}</div>
-          <div class="shake-card-macros">${s.protein}g P · ${s.carbs}g C · ${s.fat}g F · ${s.calories} cal</div>
-          <div style="font-size:23px;color:var(--text-light);margin-top:3px">${s.ingredients}</div>
-        </div>
-        <div style="color:var(--gold);font-size:25px;margin-left:10px">→</div>
-      </div>
-    </div>`).join('');
-}
-function quickLogShake(i){
-  const s=SHAKES[i];
-  const meal={id:Date.now(),date:todayKey(),time:new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),name:s.name,type:'breakfast',protein:s.protein,carbs:s.carbs,fat:s.fat,calories:s.calories,notes:'Quick logged from shake recipes',photo:null};
-  const meals=DB.get('meals')||[];
-  meals.unshift(meal);
-  DB.set('meals',meals);
-  showToast(`${s.emoji} ${s.name} logged ✓`);
-  refreshToday();
-}
-function openShakeQuickLog(){showScreen('meals',document.getElementById('nav-meals'));showMealsTab('shakes',document.querySelectorAll('#screen-meals .tab-btn')[1]);}
 
-// ============ MEDICATIONS CHECKLIST ============
-const MEDS=[
-  {id:'zepbound',name:'Zepbound',sub:'Weekly injection · GLP-1/GIP agonist'},
-  {id:'combo',name:'Enclomiphene · Anastrozole · B12',sub:'Combined pill · Mon / Wed / Fri only',mwf:true}
-];
-function renderMedChecklist(){
-  const today=todayKey();
-  const medLog=DB.get('medlog')||{};
-  const todayMeds=medLog[today]||{};
-  const dowToday=new Date().getDay(); // 0=Sun,1=Mon,2=Tue,3=Wed,4=Thu,5=Fri,6=Sat
-  const isMWF=dowToday===1||dowToday===3||dowToday===5;
-  document.getElementById('medChecklist').innerHTML=MEDS.map(m=>{
-    const notToday=m.mwf&&!isMWF;
-    const subText=notToday?m.sub+' — <span style="color:var(--warning)">not today</span>':m.sub;
-    return `<div class="med-check" style="opacity:${notToday?'0.5':'1'}">
-      <div><div class="med-name">${m.name}</div><div class="med-sub">${subText}</div></div>
-      <button class="toggle-btn ${todayMeds[m.id]?'on':''}" id="med-toggle-${m.id}" onclick="toggleMed('${m.id}')" ${notToday?'disabled':''} style="${notToday?'opacity:0.4':''}"></button>
-    </div>`;
-  }).join('');
-}
-function toggleMed(id){
-  const today=todayKey();
-  const medLog=DB.get('medlog')||{};
-  if(!medLog[today])medLog[today]={};
-  medLog[today][id]=!medLog[today][id];
-  DB.set('medlog',medLog);
-  renderMedChecklist();
-}
-function saveMedications(){showToast('Medications saved ✓');}
-function saveZepboundDate(){DB.set('zepbound-next',document.getElementById('zepbound-next').value);showToast('Injection date saved');}
-
-// ============ SYMPTOMS ============
-const SYMPTOMS=[
-  {id:'joint',name:'Joint Pain / Stiffness',note:'Low estradiol signal'},
-  {id:'mood',name:'Mood Changes / Irritability',note:'Testosterone or estradiol'},
-  {id:'libido',name:'Low Libido',note:'Free testosterone declining'},
-  {id:'sleep-sym',name:'Poor Sleep (despite good nutrition)',note:'Hormonal imbalance'},
-  {id:'energy-sym',name:'Chronic Low Energy',note:'T3/thyroid or testosterone'},
-  {id:'brain-fog',name:'Brain Fog',note:'T3 or cortisol issue'}
-];
-function renderSymptomChecklist(){
-  const today=todayKey();
-  const symLog=DB.get('symlog')||{};
-  const todaySym=symLog[today]||{};
-  document.getElementById('symptomChecklist').innerHTML=SYMPTOMS.map(s=>`
-    <div class="symptom-check">
-      <div><div class="symptom-label">${s.name}</div><div style="font-size:23px;color:var(--text-light)">${s.note}</div></div>
-      <div class="symptom-btns">
-        <button class="sym-btn ${todaySym[s.id]==='none'?'active-none':''}" onclick="setSym('${s.id}','none')">None</button>
-        <button class="sym-btn ${todaySym[s.id]==='mild'?'active-mild':''}" onclick="setSym('${s.id}','mild')">Mild</button>
-        <button class="sym-btn ${todaySym[s.id]==='notable'?'active-notable':''}" onclick="setSym('${s.id}','notable')">Notable</button>
-      </div>
-    </div>`).join('');
-}
-function setSym(id,val){
-  const today=todayKey();
-  const symLog=DB.get('symlog')||{};
-  if(!symLog[today])symLog[today]={};
-  symLog[today][id]=val;
-  DB.set('symlog',symLog);
-  renderSymptomChecklist();
-}
-function saveSymptoms(){showToast('Symptoms saved ✓');}
-function renderSymptomHistory(){
-  const symLog=DB.get('symlog')||{};
-  const entries=Object.entries(symLog).sort((a,b)=>b[0].localeCompare(a[0])).slice(0,14);
-  if(!entries.length){document.getElementById('symptomHistory').innerHTML='<div class="text-sm">No symptoms logged yet.</div>';return;}
-  const notableCount={};
-  entries.forEach(([,day])=>{
-    Object.entries(day).forEach(([sym,val])=>{
-      if(val==='notable'){notableCount[sym]=(notableCount[sym]||0)+1;}
-    });
-  });
-  const flags=Object.entries(notableCount).filter(([,c])=>c>=3);
-  let html='';
-  if(flags.length){
-    html+=`<div class="decision-box red mb-12"><div class="decision-title">🚩 Recurring Symptoms — Discuss with Dr. Movassaghi</div><div class="decision-text">${flags.map(([sym,c])=>{const s=SYMPTOMS.find(x=>x.id===sym);return`${s?s.name:sym}: notable ${c} of last ${entries.length} days`}).join('<br>')}</div></div>`;
-  }
-  html+=entries.slice(0,7).map(([date,day])=>{
-    const notable=Object.entries(day).filter(([,v])=>v==='notable').map(([id])=>SYMPTOMS.find(s=>s.id===id)?.name||id);
-    const mild=Object.entries(day).filter(([,v])=>v==='mild').map(([id])=>SYMPTOMS.find(s=>s.id===id)?.name||id);
-    const d=new Date(date+'T12:00:00');
-    const label=d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
-    return`<div style="padding:9px 0;border-bottom:1px solid var(--border)">
-      <div style="font-size:23px;font-weight:600;color:var(--navy);margin-bottom:3px">${label}</div>
-      ${notable.length?`<div style="font-size:23px;color:var(--danger)">Notable: ${notable.join(', ')}</div>`:''}
-      ${mild.length?`<div style="font-size:23px;color:var(--warning)">Mild: ${mild.join(', ')}</div>`:''}
-      ${!notable.length&&!mild.length?`<div style="font-size:23px;color:var(--success)">No symptoms</div>`:''}
-    </div>`;
-  }).join('');
-  document.getElementById('symptomHistory').innerHTML=html;
+function getFavorites(){
+  var saved=DB.get('favorites')||[];
+  return BUILTIN_FAVORITES.concat(saved);
 }
 
-// ============ MEAL LOGGING ============
-let currentPhotoBase64=null,aiMacroSuggestion=null;
-function openLogMeal(editId=null){
-  ['meal-name','meal-protein','meal-carbs','meal-fat','meal-notes'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('meal-date').value=todayKey();
-  document.getElementById('meal-edit-id').value='';
-  document.getElementById('mealModalTitle').textContent='Log a Meal';
-  document.getElementById('mealPhotoPreview').style.display='none';
-  document.getElementById('aiAnalysisBox').style.display='none';
-  document.getElementById('uploadPrompt').style.display='block';
-  document.getElementById('mealPhotoInput').value='';
-  currentPhotoBase64=null;aiMacroSuggestion=null;
-  if(editId){
-    const meals=DB.get('meals')||[];
-    const m=meals.find(x=>x.id===editId);
-    if(m){
-      document.getElementById('meal-edit-id').value=editId;
-      document.getElementById('mealModalTitle').textContent='Edit Meal';
-      document.getElementById('meal-date').value=m.date;
-      document.getElementById('meal-name').value=m.name;
-      document.getElementById('meal-type').value=m.type;
-      document.getElementById('meal-protein').value=m.protein;
-      document.getElementById('meal-carbs').value=m.carbs;
-      document.getElementById('meal-fat').value=m.fat;
-      document.getElementById('meal-notes').value=m.notes||'';
-      if(m.photo){
-        document.getElementById('mealPhotoPreview').src=m.photo;
-        document.getElementById('mealPhotoPreview').style.display='block';
-        document.getElementById('uploadPrompt').style.display='none';
-        currentPhotoBase64=m.photo.replace('data:image/jpeg;base64,','');
-      }
-    }
-  }
-  document.getElementById('mealModal').classList.add('open');
-}
-function closeMealModal(){document.getElementById('mealModal').classList.remove('open');}
-async function handlePhotoUpload(input){
-  if(!input.files||!input.files[0])return;
-  const reader=new FileReader();
-  reader.onload=async(e)=>{
-    const dataUrl=e.target.result;
-    currentPhotoBase64=dataUrl.split(',')[1];
-    const preview=document.getElementById('mealPhotoPreview');
-    preview.src=dataUrl;preview.style.display='block';
-    document.getElementById('uploadPrompt').style.display='none';
-    await analyzePhoto(currentPhotoBase64);
-  };
-  reader.readAsDataURL(input.files[0]);
-}
-async function analyzePhoto(base64){
-  const s=getSettings();
-  const aiBox=document.getElementById('aiAnalysisBox');
-  const aiText=document.getElementById('aiAnalysisText');
-  aiBox.style.display='block';
-  aiText.innerHTML='<span class="analyzing-spin"></span>Analyzing your meal...';
-  document.getElementById('aiMacrosGrid').style.display='none';
-  document.getElementById('applyAiMacros').style.display='none';
-  if(!s.apiKey){aiText.innerHTML='⚠️ Add your Anthropic API key in Settings to enable AI analysis.';return;}
-  try{
-    const resp=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','x-api-key':s.apiKey,'anthropic-version':'2023-06-01'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:600,messages:[{role:'user',content:[
-        {type:'image',source:{type:'base64',media_type:'image/jpeg',data:base64}},
-        {type:'text',text:`Analyze this meal photo and estimate macros for someone targeting ${s.protein}g protein, ${s.carbs}g carbs, ${s.fat}g fat daily. Respond ONLY with valid JSON: {"description":"brief meal name","protein":0,"carbs":0,"fat":0,"calories":0,"confidence":"high/medium/low","notes":"any tips"}`}
-      ]}]})
-    });
-    const data=await resp.json();
-    const parsed=JSON.parse(data.content?.[0]?.text||'{}');
-    aiMacroSuggestion=parsed;
-    aiText.innerHTML=`<strong>${parsed.description}</strong><br><span style="font-size:23px;opacity:0.7">Confidence: ${parsed.confidence}${parsed.notes?' · '+parsed.notes:''}</span>`;
-    document.getElementById('aiMacrosGrid').innerHTML=`
-      <div class="ai-macro-cell"><div class="v">${parsed.calories}</div><div class="l">cal</div></div>
-      <div class="ai-macro-cell"><div class="v">${parsed.protein}g</div><div class="l">protein</div></div>
-      <div class="ai-macro-cell"><div class="v">${parsed.carbs}g</div><div class="l">carbs</div></div>
-      <div class="ai-macro-cell"><div class="v">${parsed.fat}g</div><div class="l">fat</div></div>`;
-    document.getElementById('aiMacrosGrid').style.display='grid';
-    document.getElementById('applyAiMacros').style.display='inline-block';
-  }catch(err){aiText.innerHTML='⚠️ Could not analyze photo. Enter macros manually below.';}
-}
-function applyAIMacros(){
-  if(!aiMacroSuggestion)return;
-  document.getElementById('meal-protein').value=aiMacroSuggestion.protein;
-  document.getElementById('meal-carbs').value=aiMacroSuggestion.carbs;
-  document.getElementById('meal-fat').value=aiMacroSuggestion.fat;
-  if(!document.getElementById('meal-name').value)document.getElementById('meal-name').value=aiMacroSuggestion.description;
-  showToast('Macros applied ✓');
-}
-function saveMeal(){
-  const name=document.getElementById('meal-name').value||'Unnamed meal';
-  const protein=+document.getElementById('meal-protein').value||0;
-  const carbs=+document.getElementById('meal-carbs').value||0;
-  const fat=+document.getElementById('meal-fat').value||0;
-  const mealDate=document.getElementById('meal-date').value||todayKey();
-  const editId=document.getElementById('meal-edit-id').value;
-  const meals=DB.get('meals')||[];
-  if(editId){
-    const idx=meals.findIndex(m=>m.id===+editId);
-    if(idx>-1){
-      const orig=meals[idx];
-      meals[idx]={...orig,date:mealDate,name,type:document.getElementById('meal-type').value,protein,carbs,fat,calories:Math.round(protein*4+carbs*4+fat*9),notes:document.getElementById('meal-notes').value,photo:currentPhotoBase64?'data:image/jpeg;base64,'+currentPhotoBase64:orig.photo};
-    }
-    DB.set('meals',meals);closeMealModal();refreshToday();renderAllMeals();renderStreak();showToast('Meal updated ✓');
+function saveFavoriteItem(fav){
+  var saved=DB.get('favorites')||[];
+  if(fav.id){
+    var idx=saved.findIndex(function(f){return f.id===fav.id;});
+    if(idx>-1){saved[idx]=fav;}else{saved.push(fav);}
   } else {
-    const meal={id:Date.now(),date:mealDate,time:new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),name,type:document.getElementById('meal-type').value,protein,carbs,fat,calories:Math.round(protein*4+carbs*4+fat*9),notes:document.getElementById('meal-notes').value,photo:currentPhotoBase64?'data:image/jpeg;base64,'+currentPhotoBase64:null};
-    meals.unshift(meal);DB.set('meals',meals);
-    closeMealModal();refreshToday();renderAllMeals();renderStreak();showToast('Meal saved ✓');
+    fav.id='fav_'+Date.now();
+    saved.push(fav);
   }
-}
-function deleteMeal(id){
-  if(!confirm('Delete this meal?'))return;
-  DB.set('meals',(DB.get('meals')||[]).filter(m=>m.id!==id));
-  refreshToday();renderAllMeals();renderStreak();showToast('Deleted');
-}
-function renderMealItem(m){
-  const icons={breakfast:'🌅',lunch:'☀️',snack:'🍎',dinner:'🌙',other:'🍽'};
-  const thumb=m.photo?`<div class="meal-thumb"><img src="${m.photo}" alt=""></div>`:`<div class="meal-thumb">${icons[m.type]||'🍽'}</div>`;
-  return`<div class="meal-item">${thumb}<div class="meal-info"><div class="meal-name">${m.name}</div><div class="meal-macros">${m.protein}g P · ${m.carbs}g C · ${m.fat}g F · ${m.calories} cal</div>${m.notes?`<div style="font-size:23px;color:var(--text-light);margin-top:2px">${m.notes}</div>`:''}</div><div style="text-align:right;flex-shrink:0"><div style="font-size:23px;color:var(--text-light)">${m.time||''}</div><div style="display:flex;gap:8px;justify-content:flex-end;margin-top:4px"><button onclick="openLogMeal(${m.id})" style="font-size:23px;color:var(--navy);background:none;border:none;cursor:pointer;font-weight:600">Edit</button><button onclick="deleteMeal(${m.id})" style="font-size:23px;color:var(--danger);background:none;border:none;cursor:pointer">Delete</button></div></div></div>`;
-}
-function renderAllMeals(){
-  const meals=DB.get('meals')||[];
-  const list=document.getElementById('allMealsList');
-  if(!meals.length){list.innerHTML=`<div class="empty-state"><div class="icon">🍽</div><p>No meals logged yet.</p></div>`;return;}
-  const grouped={};
-  meals.forEach(m=>{
-    const key=m.date||todayKey();
-    if(!grouped[key])grouped[key]=[];
-    grouped[key].push(m);
-  });
-  list.innerHTML=Object.entries(grouped).sort((a,b)=>b[0].localeCompare(a[0])).map(([date,ms])=>{
-    const d=new Date(date+'T12:00:00');
-    const isToday=date===todayKey();
-    const label=isToday?'Today — '+d.toLocaleDateString('en-US',{month:'short',day:'numeric'}):d.toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'});
-    const totals=ms.reduce((a,m)=>({p:a.p+m.protein,c:a.c+m.carbs,f:a.f+m.fat,cal:a.cal+m.calories}),{p:0,c:0,f:0,cal:0});
-    return`<div style="margin-bottom:16px">
-      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;padding-bottom:6px;border-bottom:2px solid var(--navy);opacity:0.9">
-        <div style="font-size:23px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:0.5px">${label}</div>
-        <div style="font-size:23px;color:var(--text-light)">${Math.round(totals.p)}P · ${Math.round(totals.c)}C · ${Math.round(totals.f)}F · ${Math.round(totals.cal)}cal</div>
-      </div>
-      ${ms.map(m=>renderMealItem(m)).join('')}
-    </div>`;
-  }).join('');
+  DB.set('favorites',saved);
 }
 
-// ============ DAILY CHECK-IN ============
-function saveDailyCheckin(){
-  const key=_viewingDate||todayKey();
-  const data={date:key,weight:+document.getElementById('daily-weight').value||null,energy:+document.getElementById('daily-energy').value,hunger:+document.getElementById('daily-hunger').value,sleep:+document.getElementById('daily-sleep').value,steps:+document.getElementById('daily-steps').value||null,notes:document.getElementById('daily-notes').value};
-  const checkins=DB.get('checkins')||{};checkins[key]=data;DB.set('checkins',checkins);
-  document.getElementById('checkin-status').textContent='Done ✓';
-  document.getElementById('checkin-status').className='badge badge-green';
-  showToast('Check-in saved ✓');refreshProgress();
+function deleteFavorite(id){
+  var saved=DB.get('favorites')||[];
+  DB.set('favorites',saved.filter(function(f){return f.id!==id;}));
+  renderFavorites();
 }
-function loadTodayCheckin(){
-  const checkins=DB.get('checkins')||{};
-  const today=checkins[_viewingDate||todayKey()];
-  if(today){
-    if(today.weight)document.getElementById('daily-weight').value=today.weight;
-    ['energy','hunger','sleep'].forEach(k=>{document.getElementById('daily-'+k).value=today[k];document.getElementById(k+'-val').textContent=today[k];});
-    if(today.steps)document.getElementById('daily-steps').value=today.steps;
-    if(today.notes)document.getElementById('daily-notes').value=today.notes;
-    document.getElementById('checkin-status').textContent='Done ✓';
-    document.getElementById('checkin-status').className='badge badge-green';
-  }
-}
-
-// ============ TODAY REFRESH ============
-function goToToday(){
-  selectDay(todayKey());
-  setTimeout(function(){
-    var bar=document.getElementById('streakBar');
-    var todayEl=bar&&bar.querySelector('.streak-day.today');
-    if(todayEl)todayEl.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});
-  },50);
-}
-
-function selectDay(key){
-  _viewingDate=key;
-  renderStreak();
-  refreshToday();
-  // Scroll selected day into view
-  setTimeout(function(){
-    const bar=document.getElementById('streakBar');
-    const selected=bar.querySelector('.streak-day.selected,.streak-day.today');
-    if(selected)selected.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});
-  },50);
-  // Update the "Today" header label
-  const el=document.getElementById('viewingDateLabel');
-  if(el){
-    const tKey=todayKey();
-    el.textContent=key===tKey?'Today':new Date(key+'T12:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
-  }
-}
-
-function refreshToday(){
-  const s=getSettings();
-  const today=todayKey();
-  const viewDate=_viewingDate||today;
-  const meals=(DB.get('meals')||[]).filter(m=>(m.date||today)===viewDate);
-  const totals=meals.reduce((acc,m)=>({protein:acc.protein+m.protein,carbs:acc.carbs+m.carbs,fat:acc.fat+m.fat,calories:acc.calories+m.calories}),{protein:0,carbs:0,fat:0,calories:0});
-  document.getElementById('dash-protein').textContent=Math.round(totals.protein);
-  document.getElementById('dash-carbs').textContent=Math.round(totals.carbs);
-  document.getElementById('dash-fat').textContent=Math.round(totals.fat);
-  document.getElementById('dash-cal').textContent=Math.round(totals.calories);
-  document.getElementById('tgt-protein').textContent=s.protein;
-  document.getElementById('tgt-carbs').textContent=s.carbs;
-  document.getElementById('tgt-fat').textContent=s.fat;
-  document.getElementById('tgt-cal').textContent=s.calories;
-  // Remaining to goal
-  const setRem=(id,val,target,sfx)=>{
-    const el=document.getElementById(id);if(!el)return;
-    const rem=Math.round(target-val);
-    if(rem<=0){el.textContent='✓ Goal reached';el.style.color='var(--success)';}
-    else{el.textContent=rem+sfx+' to go';el.style.color='var(--text-light)';}
-  };
-  setRem('rem-protein',totals.protein,s.protein,'g');
-  setRem('rem-carbs',totals.carbs,s.carbs,'g');
-  setRem('rem-fat',totals.fat,s.fat,'g');
-  setRem('rem-cal',totals.calories,s.calories,'');
-  // Update sticky macro bar
-  var updateBubble=function(id,valId,val,target,sfx){
-    var rem=Math.round(target-val);
-    var over=Math.round(val-target);
-    var el=document.getElementById(id);
-    var velEl=document.getElementById(valId);
-    if(!el||!velEl)return;
-    if(over>5){
-      el.className='macro-bubble over';
-      velEl.textContent='+'+over+sfx;
-    } else if(rem<=0){
-      el.className='macro-bubble done';
-      velEl.textContent='✓';
-    } else {
-      el.className='macro-bubble';
-      velEl.textContent=rem+sfx;
-    }
-  };
-  updateBubble('mb-protein','mb-protein-val',totals.protein,s.protein,'g');
-  updateBubble('mb-carbs','mb-carbs-val',totals.carbs,s.carbs,'g');
-  updateBubble('mb-fat','mb-fat-val',totals.fat,s.fat,'g');
-  updateBubble('mb-cal','mb-cal-val',totals.calories,s.calories,'');
-  const setBar=(id,lblId,val,target,sfx)=>{
-    const pct=Math.min(100,(val/target)*100);
-    document.getElementById(id).style.width=pct+'%';
-    document.getElementById(lblId).textContent=`${Math.round(val)}/${target}${sfx}`;
-  };
-  setBar('prog-protein','prog-protein-lbl',totals.protein,s.protein,'g');
-  setBar('prog-carbs','prog-carbs-lbl',totals.carbs,s.carbs,'g');
-  setBar('prog-fat','prog-fat-lbl',totals.fat,s.fat,'g');
-  setBar('prog-cal','prog-cal-lbl',totals.calories,s.calories,'');
-  // Fix bar colors after setBar
-  const pb=document.getElementById('prog-protein');
-  if(totals.protein<=s.protein*1.1)pb.className='prog-fill protein';
-  else pb.className='prog-fill over';
-  const cb=document.getElementById('prog-carbs');
-  if(totals.carbs<=s.carbs*1.1)cb.className='prog-fill carbs';else cb.className='prog-fill over';
-  const fb=document.getElementById('prog-fat');
-  if(totals.fat<=s.fat*1.1)fb.className='prog-fill fat';else fb.className='prog-fill over';
-  const calb=document.getElementById('prog-cal');
-  if(totals.calories<=s.calories*1.05)calb.className='prog-fill calories';else calb.className='prog-fill over';
-
-  // Protein alert after 6pm
-  const hour=new Date().getHours();
-  const alert=document.getElementById('proteinAlert');
-  if(hour>=18&&totals.protein<s.protein*0.75){
-    alert.style.display='block';
-    document.getElementById('proteinAlertSub').textContent=`You have ${Math.round(totals.protein)}g of ${s.protein}g target. Need ${Math.round(s.protein-totals.protein)}g more today.`;
-  }else{alert.style.display='none';}
-
-  const viewDate2=_viewingDate||todayKey();
-  const todayMealsOnly=(DB.get('meals')||[]).filter(m=>(m.date||todayKey())===viewDate2);
-  const todayList=document.getElementById('todayMealsList');
-  todayList.innerHTML=todayMealsOnly.length?todayMealsOnly.map(m=>renderMealItem(m)).join(''):`<div class="empty-state"><div class="icon">🍽</div><p>No meals logged yet today.<br><span style="font-size:23px">Tap + Meal or 🥤 Shake above.</span></p></div>`;
-  renderStreak();loadTodayCheckin();renderMedChecklist();renderSymptomChecklist();
-}
-
-// Track which date the Today view is showing
-var _viewingDate = todayKey();
-
-// Returns true if protein target was hit (within 10g) for a given date key
-function hitProteinTarget(dateKey){
-  const s=getSettings();
-  const meals=DB.get('meals')||[];
-  const dayMeals=meals.filter(m=>(m.date||todayKey())===dateKey);
-  const totalProtein=dayMeals.reduce(function(acc,m){return acc+(m.protein||0);},0);
-  return totalProtein>0&&(s.protein-totalProtein)<=10;
-}
-
-// Calculate current protein streak (consecutive days ending today hitting target within 10g)
-function calcProteinStreak(){
-  const today=new Date();
-  let streak=0;
-  for(let i=0;i<365;i++){
-    const d=new Date(today);d.setDate(d.getDate()-i);
-    const key=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-    if(hitProteinTarget(key)){streak++;}
-    else if(i>0){break;} // Allow today to be incomplete, break on any past miss
-  }
-  return streak;
-}
-
-function renderStreak(){
-  const meals=DB.get('meals')||[];
-  const dayLabels=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
-  const today=new Date();
-  const tKey=todayKey();
-  const bar=document.getElementById('streakBar');bar.innerHTML='';
-  // Build 5 weeks back + current week for horizontal scroll
-  const dayOfWeek=today.getDay();
-  const daysFromMon=dayOfWeek===0?6:dayOfWeek-1;
-  const totalDays=28+daysFromMon+7;
-  for(let i=-(totalDays-7);i<7;i++){
-    const d=new Date(today);d.setDate(d.getDate()-daysFromMon+i);
-    const key=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-    const isToday=key===tKey;
-    const isFuture=d>today;
-    const proteinHit=!isFuture&&hitProteinTarget(key);
-    const isSelected=key===_viewingDate;
-    const dayIdx=(d.getDay()+6)%7;
-    let cls=(isFuture||(!proteinHit&&!isToday))?'future':isToday?'today':proteinHit?'logged':'';
-    if(isSelected&&!isToday)cls+=' selected';
-    const dateStr=(d.getMonth()+1)+'/'+d.getDate();
-    bar.innerHTML+=`<div class="streak-day ${cls}" onclick="selectDay('${key}')" title="${key}">
-      <div class="sd-name">${dayLabels[dayIdx]}</div>
-      <div class="sd-date">${dateStr}</div>
-    </div>`;
-  }
-  const streak=calcProteinStreak();document.getElementById('streakCount').textContent=streak+' day streak';
-}
-
-// ============ WEEKLY CHECK-IN ============
-function calculateWeekly(){
-  const avgWeight=+document.getElementById('weekly-avg-weight').value;
-  const prevWeight=+document.getElementById('weekly-prev-weight').value;
-  if(!avgWeight||!prevWeight){showToast('Enter both weight averages');return;}
-  const energy=+document.getElementById('w-energy').value;
-  const sleep=+document.getElementById('w-sleep').value;
-  const hunger=+document.getElementById('w-hunger').value;
-  const strength=document.getElementById('w-strength').value;
-  const digestion=document.getElementById('w-digestion').value;
-  const look=document.getElementById('w-look').value;
-  const phase=document.getElementById('w-phase').value;
-  const date=document.getElementById('weekly-date').value;
-  const weightChange=avgWeight-prevWeight;
-  const weekly=DB.get('weeklyCheckins')||[];
-  const editIdx=document.getElementById('weekly-edit-idx').value;
-  const entry={date,avgWeight,prevWeight,energy,sleep,hunger,strength,digestion,look,phase,weightChange};
-  if(editIdx!==''){
-    weekly[+editIdx]=entry;
-    document.getElementById('weekly-edit-idx').value='';
-  } else {
-    weekly.unshift(entry);
-  }
-  DB.set('weeklyCheckins',weekly);
-  const decision=getDecision(phase,weightChange,energy,hunger,strength,look);
-  const box=document.getElementById('weeklyDecision');
-  box.style.display='block';
-  box.innerHTML=`<div class="decision-box ${decision.color}"><div class="decision-title">${decision.title}</div><div class="decision-text">${decision.text}</div></div>${decision.refeed?`<div class="decision-box red" style="margin-top:10px"><div class="decision-title">⚡ Refeed Recommended</div><div class="decision-text">${decision.refeed}</div></div>`:''}`;
-  renderWeightHistory();showToast('Weekly check-in saved ✓');
-}
-function getDecision(phase,change,energy,hunger,strength,look){
-  if(energy<=3&&hunger>=9)return{color:'red',title:'🚨 Red Zone — Level 2 Refeed Now',text:'Energy critically low AND hunger extreme. Do not cut further.',refeed:'Level 2 Refeed: Add 100g carbs/day for 2 consecutive days. Keep protein and fat the same. Scale may rise 2-3 lbs from glycogen — not fat.'};
-  if(strength==='down')return{color:'red',title:'⚠️ Strength Dropping — Stop Cutting',text:'Dropping strength means muscle loss. Stop any further calorie reduction immediately.',refeed:'Level 1 Refeed: Add 50-100g carbs for one day to restore glycogen and signal safety.'};
-  if(phase==='1'){
-    if(energy>=7&&hunger<=7&&strength!=='down'&&digestion!=='poor')return{color:'green',title:'✅ Phase 1 Progressing Well',text:`Metabolism responding. Add 25-50g carbs next week. ${look==='tighter'?'Body comp visibly improving — excellent.':''}`};
-    if(change>3)return{color:'amber',title:'📊 Weight Rising Fast — Hold Carbs',text:'Scale up more than 3 lbs. Hold carbs flat and monitor. Some increase is normal glycogen.'};
-    if(energy<=4)return{color:'amber',title:'⚡ Energy Still Low — Add More Carbs',text:'Low energy in Phase 1 = metabolism still suppressed. Add 50g carbs this week instead of 25g.'};
-    return{color:'green',title:'✅ On Track — Keep Adding Carbs',text:'Phase 1 progressing. Add 25g carbs next week. Keep protein at target and steps at 8-10K.'};
-  }
-  if(phase==='2'){
-    if(change<-1.5)return{color:'amber',title:'⚠️ Losing Too Fast — Add Carbs Back',text:`Lost ${Math.abs(change).toFixed(1)} lbs — faster than 1.5 lbs risks muscle. Add 25g carbs next week. Target: 0.5-1.5 lbs/week.`};
-    if(change>=-1.5&&change<=-0.5)return{color:'green',title:'🎯 Perfect Rate of Loss',text:`Lost ${Math.abs(change).toFixed(1)} lbs — ideal 0.5-1.5 lb range. Change nothing.`};
-    if(change>0.5)return{color:'amber',title:'📉 Reduce 10g Carbs + 10g Protein',text:'Weight up or flat. Apply small cut: drop carbs 10g and protein 10g. One change at a time.'};
-    return{color:'amber',title:'📉 Plateau — Reduce Carbs',text:'Weight flat. If second consecutive flat week: drop 10g carbs + 10g protein. If first flat week: hold and reassess.'};
-  }
-  return{color:'green',title:'🔄 Phase 3 — Restore & Rebuild',text:'Keep carbs climbing, reduce cardio to zero. Let hormones reset before next fat loss cycle.'};
-}
-function renderWeightHistory(){
-  const weekly=DB.get('weeklyCheckins')||[];
-  const el=document.getElementById('weightHistory');
-  if(!weekly.length){el.innerHTML=`<div class="empty-state"><div class="icon">📊</div><p>No check-ins yet.</p></div>`;return;}
-  el.innerHTML=weekly.slice(0,12).map((w,i)=>{
-    const d=new Date(w.date+'T12:00:00');
-    const delta=w.weightChange;const cls=delta<0?'down':'up';
-    return`<div class="history-entry">
-      <div>
-        <div style="font-size:16px;font-weight:600;color:var(--navy)">Week ending ${d.toLocaleDateString('en-US',{month:'short',day:'numeric'})}</div>
-        <div style="font-size:23px;color:var(--text-light)">Phase ${w.phase} · Energy ${w.energy}/10 · Hunger ${w.hunger}/10</div>
-        <div style="display:flex;gap:10px;margin-top:4px">
-          <button onclick="editWeeklyCheckin(${i})" style="font-size:23px;color:var(--navy);background:none;border:none;cursor:pointer;font-weight:600">Edit</button>
-          <button onclick="deleteWeeklyCheckin(${i})" style="font-size:23px;color:var(--danger);background:none;border:none;cursor:pointer">Delete</button>
-        </div>
-      </div>
-      <div style="text-align:right">
-        <div class="history-val">${w.avgWeight}</div>
-        <div class="history-delta ${cls}">${delta>0?'+':''}${delta.toFixed(1)} lbs</div>
-      </div>
-    </div>`;
-  }).join('');
-}
-function editWeeklyCheckin(idx){
-  const weekly=DB.get('weeklyCheckins')||[];
-  const w=weekly[idx];
-  if(!w)return;
-  // Populate the form
-  document.getElementById('weekly-date').value=w.date;
-  document.getElementById('weekly-avg-weight').value=w.avgWeight;
-  document.getElementById('weekly-prev-weight').value=w.prevWeight;
-  document.getElementById('w-energy').value=w.energy;document.getElementById('w-energy-val').textContent=w.energy;
-  document.getElementById('w-sleep').value=w.sleep;document.getElementById('w-sleep-val').textContent=w.sleep;
-  document.getElementById('w-hunger').value=w.hunger;document.getElementById('w-hunger-val').textContent=w.hunger;
-  document.getElementById('w-strength').value=w.strength;
-  document.getElementById('w-digestion').value=w.digestion;
-  document.getElementById('w-look').value=w.look;
-  document.getElementById('w-phase').value=w.phase;
-  // Store edit index
-  document.getElementById('weekly-edit-idx').value=idx;
-  // Switch to the check-in tab
-  showWeeklyTab('checkin',document.querySelectorAll('#screen-weekly .tab-btn')[0]);
-  window.scrollTo(0,0);
-  showToast('Edit the check-in and tap Get My Recommendation to save');
-}
-function deleteWeeklyCheckin(idx){
-  if(!confirm('Delete this weekly check-in?'))return;
-  const weekly=DB.get('weeklyCheckins')||[];
-  weekly.splice(idx,1);DB.set('weeklyCheckins',weekly);
-  renderWeightHistory();showToast('Check-in deleted');
-}
-
-// ============ CARB TRACKER ============
-function renderCarbHistory(){
-  const history=DB.get('carbHistory')||[];
-  const currentWeek=DB.get('carbCurrentWeek')||{target:175,week:1};
-  document.getElementById('currentCarbTarget').textContent=currentWeek.target+'g';
-  document.getElementById('nextCarbTarget').textContent='+'+(currentWeek.target+25)+' to '+(currentWeek.target+50)+'g';
-  const el=document.getElementById('carbWeekHistory');
-  if(!history.length){el.innerHTML='<div class="text-sm">No weeks completed yet.</div>';return;}
-  el.innerHTML=history.map(h=>`<div class="carb-week-row"><div><div style="font-size:16px;font-weight:600;color:var(--navy)">Week ${h.week}</div><div style="font-size:23px;color:var(--text-light)">${h.date}</div></div><div style="font-family:'DM Serif Display',serif;font-size:25px;color:var(--gold)">${h.target}g</div></div>`).join('');
-}
-function adjustCarbWeek(delta){
-  const current=DB.get('carbCurrentWeek')||{target:175,week:1};
-  current.target=Math.max(100,current.target+delta);
-  DB.set('carbCurrentWeek',current);
-  renderCarbHistory();
-  // Update main settings carbs
-  const s=getSettings();s.carbs=current.target;DB.set('settings',s);
-  document.getElementById('tgt-carbs').textContent=current.target;
-  showToast('Carb target updated to '+current.target+'g');
-}
-function advanceCarbWeek(){
-  const current=DB.get('carbCurrentWeek')||{target:175,week:1};
-  const history=DB.get('carbHistory')||[];
-  history.unshift({week:current.week,target:current.target,date:todayKey()});
-  DB.set('carbHistory',history);
-  current.week++;current.target=Math.min(450,current.target+25);
-  DB.set('carbCurrentWeek',current);
-  const s=getSettings();s.carbs=current.target;DB.set('settings',s);
-  renderCarbHistory();showToast('Week '+history[0].week+' completed → Week '+current.week+' started at '+current.target+'g');
-}
-
-// ============ REFEED LOG ============
-function openLogRefeed(){document.getElementById('refeed-date').value=todayKey();document.getElementById('refeedModal').classList.add('open');}
-function closeRefeedModal(){document.getElementById('refeedModal').classList.remove('open');}
-function saveRefeed(){
-  const r={id:Date.now(),date:document.getElementById('refeed-date').value,level:+document.getElementById('refeed-level').value,carbs:+document.getElementById('refeed-carbs').value||100,trigger:document.getElementById('refeed-trigger').value,notes:document.getElementById('refeed-notes').value};
-  const refeeds=DB.get('refeeds')||[];refeeds.unshift(r);DB.set('refeeds',refeeds);
-  closeRefeedModal();renderRefeedLog();showToast('Refeed logged ✓');
-}
-function renderRefeedLog(){
-  const refeeds=DB.get('refeeds')||[];
-  const el=document.getElementById('refeedLog');
-  if(!refeeds.length){el.innerHTML='<div class="text-sm">No refeeds logged yet.</div>';return;}
-  const levelLabels={1:'Level 1 — Single Day',2:'Level 2 — Two Days',3:'Level 3 — Diet Break'};
-  el.innerHTML=refeeds.map(r=>{
-    const d=new Date(r.date+'T12:00:00');
-    return`<div style="padding:10px 0;border-bottom:1px solid var(--border)"><div style="display:flex;justify-content:space-between;margin-bottom:4px"><span class="refeed-badge">⚡ ${levelLabels[r.level]}</span><span style="font-size:23px;color:var(--text-light)">${d.toLocaleDateString('en-US',{month:'short',day:'numeric'})}</span></div><div style="font-size:23px;color:var(--text-light)">${r.carbs}g carbs added · ${r.trigger.replace('-',' ')}</div>${r.notes?`<div style="font-size:23px;color:var(--text-light);margin-top:3px">${r.notes}</div>`:''}</div>`;
-  }).join('');
-}
-
-// ============ LAB RESULTS ============
-const LAB_REFS={'Free Testosterone':{low:6.8,high:21.5,unit:'pg/mL'},'Total Testosterone':{low:264,high:916,unit:'ng/dL'},'SHBG':{low:16.5,high:55.9,unit:'nmol/L'},'Estradiol':{low:7.6,high:42.6,unit:'pg/mL'},'TSH':{low:0.45,high:4.5,unit:'uIU/mL'},'HDL':{low:39,high:999,unit:'mg/dL'},'LDL':{low:0,high:99,unit:'mg/dL'},'A1C':{low:0,high:5.6,unit:'%'},'Fasting Glucose':{low:70,high:99,unit:'mg/dL'}};
-function openLogLab(){document.getElementById('lab-date').value=todayKey();document.getElementById('labModal').classList.add('open');}
-function closeLabModal(){document.getElementById('labModal').classList.remove('open');}
-function saveLab(){
-  const l={id:Date.now(),date:document.getElementById('lab-date').value,marker:document.getElementById('lab-marker').value,value:+document.getElementById('lab-value').value,status:document.getElementById('lab-status').value,notes:document.getElementById('lab-notes').value};
-  const labs=DB.get('labs')||[];labs.unshift(l);DB.set('labs',labs);
-  closeLabModal();renderLabResults();showToast('Lab result saved ✓');
-}
-function deleteLab(id){if(!confirm('Delete?'))return;DB.set('labs',(DB.get('labs')||[]).filter(l=>l.id!==id));renderLabResults();}
-function renderLabResults(){
-  const labs=DB.get('labs')||[];
-  const el=document.getElementById('labResults');
-  if(!labs.length){el.innerHTML=`<div class="empty-state"><div class="icon">🔬</div><p>No lab results yet.<br>Tap + Add Result to log your March 2026 baseline.</p></div>`;return;}
-  // Group by marker, show latest per marker + history
-  const byMarker={};
-  labs.forEach(l=>{if(!byMarker[l.marker])byMarker[l.marker]=[];byMarker[l.marker].push(l);});
-  el.innerHTML=Object.entries(byMarker).map(([marker,entries])=>{
-    const latest=entries[0];
-    const ref=LAB_REFS[marker];
-    const statusColor={normal:'var(--success)',low:'var(--danger)',high:'var(--warning)',optimal:'var(--navy)'}[latest.status]||'var(--text-light)';
-    const trend=entries.length>1?(entries[0].value-entries[1].value).toFixed(2):'—';
-    const trendDir=entries.length>1&&entries[0].value!==entries[1].value?(entries[0].value>entries[1].value?'↑':'↓'):'';
-    return`<div style="padding:11px 0;border-bottom:1px solid var(--border)">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start">
-        <div>
-          <div class="lab-name">${marker}</div>
-          <div class="lab-date">${new Date(latest.date+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})} ${ref?'· Ref: '+ref.low+'-'+ref.high+' '+ref.unit:''}</div>
-          ${latest.notes?`<div style="font-size:23px;color:var(--text-light);margin-top:2px">${latest.notes}</div>`:''}
-          ${entries.length>1?`<div style="font-size:23px;color:var(--text-light);margin-top:2px">Trend: ${trendDir} ${Math.abs(+trend)} from previous</div>`:''}
-        </div>
-        <div style="text-align:right;flex-shrink:0;margin-left:10px">
-          <div class="lab-val">${latest.value}</div>
-          <div class="lab-status" style="color:${statusColor}">${latest.status}</div>
-          <button onclick="deleteLab(${latest.id})" style="font-size:23px;color:var(--danger);background:none;border:none;cursor:pointer;margin-top:2px">Delete</button>
-        </div>
-      </div>
-    </div>`;
-  }).join('');
-}
-
-// ============ WORKOUT LOG ============
-let exCount=0;
-function openLogWorkout(editId=null){
-  document.getElementById('exerciseList').innerHTML='';
-  document.getElementById('workout-duration').value='';
-  document.getElementById('workout-notes').value='';
-  document.getElementById('workout-date').value=todayKey();
-  document.getElementById('workout-edit-id').value='';
-  document.getElementById('workoutModalTitle').textContent='Log Workout';
-  exCount=0;
-  if(editId){
-    const workouts=DB.get('workouts')||[];
-    const w=workouts.find(x=>x.id===editId);
-    if(w){
-      document.getElementById('workout-edit-id').value=editId;
-      document.getElementById('workoutModalTitle').textContent='Edit Workout';
-      document.getElementById('workout-date').value=w.date||todayKey();
-      document.getElementById('workout-day').value=w.day;
-      document.getElementById('workout-duration').value=w.duration||'';
-      document.getElementById('workout-feel').value=w.feel;
-      document.getElementById('workout-notes').value=w.notes||'';
-      w.exercises.forEach(ex=>{
-        exCount++;
-        const row=document.createElement('div');
-        row.style.cssText='display:grid;grid-template-columns:2fr 1fr 1fr;gap:5px;margin-bottom:7px;align-items:end';
-        row.innerHTML=`<div><label style="font-size:23px">Exercise</label><input type="text" value="${ex.name||''}" style="font-size:23px;padding:8px 9px"></div><div><label style="font-size:23px">Weight (lbs)</label><input type="number" value="${ex.weight||''}" style="font-size:23px;padding:8px 9px"></div><div><label style="font-size:23px">Sets×Reps</label><input type="text" value="${ex.sets||''}" style="font-size:23px;padding:8px 9px"></div>`;
-        document.getElementById('exerciseList').appendChild(row);
+function renderFavorites(){
+  var favs=getFavorites();
+  var html=favs.map(function(f){
+    var fid=f.id;
+    var editBtn='<button onclick="editFavorite(fid)" style="font-size:11px;color:var(--navy);background:none;border:none;cursor:pointer;font-weight:600;display:block;margin-bottom:3px">Edit</button>';
+    var delBtn=f.builtin?'':'<button onclick="deleteFavorite(fid)" style="font-size:11px;color:var(--danger);background:none;border:none;cursor:pointer;display:block">Delete</button>';
+    var card=document.createElement('div');
+    card.className='shake-card';
+    card.innerHTML='<div style="display:flex;justify-content:space-between;align-items:flex-start">'+
+      '<div style="flex:1;min-width:0;cursor:pointer" class="fav-tap-'+fid.replace(/[^a-z0-9]/gi,'')+'">'+
+        '<div class="shake-card-name">'+(f.emoji||'🍽')+' '+f.name+'</div>'+
+        '<div class="shake-card-macros">'+f.protein+'g P · '+f.carbs+'g C · '+f.fat+'g F · '+f.calories+' cal</div>'+
+        (f.notes?'<div style="font-size:12px;color:var(--text-light);margin-top:3px">'+f.notes+'</div>':'')+
+      '</div>'+
+      '<div style="display:flex;flex-direction:column;align-items:flex-end;margin-left:10px;flex-shrink:0">'+
+        '<div style="color:var(--gold);font-size:20px;margin-bottom:6px">→</div>'+
+        editBtn+delBtn+
+      '</div>'+
+    '</div>';
+    card.querySelector('.fav-tap-'+fid.replace(/[^a-z0-9]/gi,'')).addEventListener('click',function(){quickLogFavorite(fid);});
+    card.querySelectorAll('button').forEach(function(btn){
+      btn.addEventListener('click',function(e){
+        e.stopPropagation();
+        if(btn.textContent==='Edit')editFavorite(fid);
+        else if(btn.textContent==='Delete')deleteFavorite(fid);
       });
-    }
-  } else {
-    addExerciseRow();addExerciseRow();addExerciseRow();
-  }
-  document.getElementById('workoutModal').classList.add('open');
-}
-function closeWorkoutModal(){document.getElementById('workoutModal').classList.remove('open');}
-function addExerciseRow(){
-  exCount++;
-  const row=document.createElement('div');
-  row.style.cssText='display:grid;grid-template-columns:2fr 1fr 1fr;gap:5px;margin-bottom:7px;align-items:end';
-  row.innerHTML=`<div><label style="font-size:23px">Exercise</label><input type="text" placeholder="e.g. Chest Press" style="font-size:23px;padding:8px 9px"></div><div><label style="font-size:23px">Weight (lbs)</label><input type="number" placeholder="0" style="font-size:23px;padding:8px 9px"></div><div><label style="font-size:23px">Sets×Reps</label><input type="text" placeholder="3×12" style="font-size:23px;padding:8px 9px"></div>`;
-  document.getElementById('exerciseList').appendChild(row);
-}
-function saveWorkout(){
-  const exercises=[];
-  document.querySelectorAll('#exerciseList > div').forEach(row=>{
-    const inputs=row.querySelectorAll('input');
-    if(inputs[0].value)exercises.push({name:inputs[0].value,weight:inputs[1].value,sets:inputs[2].value});
+    });
+    return card;
   });
-  if(!exercises.length){showToast('Add at least one exercise');return;}
-  const workoutDate=document.getElementById('workout-date').value||todayKey();
-  const editId=document.getElementById('workout-edit-id').value;
-  const workouts=DB.get('workouts')||[];
-  if(editId){
-    const idx=workouts.findIndex(x=>x.id===+editId);
-    if(idx>-1){
-      workouts[idx]={...workouts[idx],date:workoutDate,day:document.getElementById('workout-day').value,duration:+document.getElementById('workout-duration').value,feel:document.getElementById('workout-feel').value,exercises,notes:document.getElementById('workout-notes').value};
-    }
-    DB.set('workouts',workouts);closeWorkoutModal();renderWorkoutLog();showToast('Workout updated ✓');
-  } else {
-    const w={id:Date.now(),date:workoutDate,day:document.getElementById('workout-day').value,duration:+document.getElementById('workout-duration').value,feel:document.getElementById('workout-feel').value,exercises,notes:document.getElementById('workout-notes').value};
-    workouts.unshift(w);DB.set('workouts',workouts);
-    closeWorkoutModal();renderWorkoutLog();showToast('Workout saved ✓');
-  }
+  var listEl=document.getElementById('shakeList');
+  if(!listEl)return;
+  listEl.innerHTML='';
+  if(html.length===0){listEl.innerHTML='<div class="text-sm">No favorites yet.</div>';return;}
+  html.forEach(function(card){listEl.appendChild(card);});
 }
-function renderWorkoutLog(){
-  const workouts=DB.get('workouts')||[];
-  const el=document.getElementById('workoutLog');
-  if(!workouts.length){el.innerHTML=`<div class="empty-state"><div class="icon">💪</div><p>No workouts logged yet.</p></div>`;return;}
-  el.innerHTML=workouts.slice(0,15).map(w=>{
-    const d=new Date((w.date||todayKey())+'T12:00:00');
-    const feelIcon={great:'🔥',good:'✅',ok:'👍',poor:'😓'}[w.feel]||'💪';
-    return`<div style="padding:11px 0;border-bottom:1px solid var(--border)">
-      <div style="display:flex;justify-content:space-between;margin-bottom:5px">
-        <div><span style="font-weight:600;color:var(--navy)">Day ${w.day}</span><span style="font-size:23px;color:var(--text-light);margin-left:7px">${d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})}</span></div>
-        <div style="display:flex;align-items:center;gap:10px">
-          <span style="font-size:16px">${feelIcon} ${w.duration?w.duration+' min':''}</span>
-          <button onclick="openLogWorkout(${w.id})" style="font-size:23px;color:var(--navy);background:none;border:none;cursor:pointer;font-weight:600">Edit</button>
-          <button onclick="deleteWorkout(${w.id})" style="font-size:23px;color:var(--danger);background:none;border:none;cursor:pointer">Delete</button>
-        </div>
-      </div>
-      <div style="font-size:23px;color:var(--text-light)">${w.exercises.map(e=>`${e.name}${e.weight?' · '+e.weight+'lb':''}${e.sets?' · '+e.sets:''}`).join(' · ')}</div>
-      ${w.notes?`<div style="font-size:23px;color:var(--text-light);margin-top:3px">${w.notes}</div>`:''}
-    </div>`;
-  }).join('');
-}
-function deleteWorkout(id){
-  if(!confirm('Delete this workout?'))return;
-  DB.set('workouts',(DB.get('workouts')||[]).filter(w=>w.id!==id));
-  renderWorkoutLog();showToast('Workout deleted');
-}
-
-// ============ STEPS HISTORY ============
-function renderStepsHistory(){
-  const checkins=DB.get('checkins')||{};
-  const s=getSettings();
-  const entries=Object.entries(checkins).filter(([,v])=>v.steps).sort((a,b)=>b[0].localeCompare(a[0]));
-  const last7=entries.slice(0,7).reverse();
-  const maxSteps=Math.max(s.steps*1.2,...last7.map(([,v])=>v.steps||0));
-  const bar=document.getElementById('stepsBar');
-  bar.innerHTML=last7.map(([date,v])=>{
-    const pct=Math.round((v.steps/maxSteps)*100);
-    const d=new Date(date+'T12:00:00');
-    const cls=date===todayKey()?'today':(v.steps>=s.steps?'goal':'');
-    return`<div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;height:100%;position:relative"><div class="steps-col ${cls}" style="height:${pct}%"><div class="steps-col-label">${d.toLocaleDateString('en-US',{weekday:'short'})}</div></div></div>`;
-  }).join('');
-  const avgSteps=last7.length?Math.round(last7.reduce((a,[,v])=>a+(v.steps||0),0)/last7.length):0;
-  document.getElementById('stepsStats').textContent=`7-day average: ${avgSteps.toLocaleString()} steps · Goal: ${s.steps.toLocaleString()} steps/day`;
-  const el=document.getElementById('stepsHistory');
-  if(!entries.length){el.innerHTML='<div class="text-sm">No step data yet. Log steps in daily check-in.</div>';return;}
-  el.innerHTML=entries.slice(0,14).map(([date,v])=>{
-    const d=new Date(date+'T12:00:00');
-    const hit=v.steps>=s.steps;
-    return`<div class="history-entry"><div class="history-date">${d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})}</div><div style="text-align:right"><div class="history-val">${v.steps?.toLocaleString()||'—'}</div><div style="font-size:23px;color:${hit?'var(--success)':'var(--warning)'}">${hit?'Goal hit ✓':'Below goal'}</div></div></div>`;
-  }).join('');
-}
-
-// ============ PROGRESS SCREEN ============
-function refreshProgress(){
-  const s=getSettings();
-  const checkins=DB.get('checkins')||{};
-  const recent=Object.entries(checkins).sort((a,b)=>b[0].localeCompare(a[0]));
-  const latestWeight=recent.find(([,v])=>v.weight)?.[1]?.weight;
-  document.getElementById('prog-current-weight').textContent=latestWeight?latestWeight+' lbs':'—';
-  document.getElementById('prog-lost').textContent=latestWeight?(s.startWeight-latestWeight).toFixed(1)+' lbs':'—';
-  const last7=recent.slice(0,7).map(([,v])=>v);
-  if(last7.length){
-    const avgE=(last7.reduce((a,v)=>a+v.energy,0)/last7.length).toFixed(1);
-    const avgH=(last7.reduce((a,v)=>a+v.hunger,0)/last7.length).toFixed(1);
-    const avgSl=(last7.reduce((a,v)=>a+v.sleep,0)/last7.length).toFixed(1);
-    const wts=last7.filter(v=>v.weight).map(v=>v.weight);
-    const avgWt=wts.length?(wts.reduce((a,b)=>a+b,0)/wts.length).toFixed(1):'—';
-    document.getElementById('sevenDayStats').innerHTML=`<div class="row-4"><div class="macro-box"><div class="val">${avgWt}</div><div class="lbl">Avg Wt</div></div><div class="macro-box"><div class="val">${avgE}</div><div class="lbl">Energy</div></div><div class="macro-box"><div class="val">${avgH}</div><div class="lbl">Hunger</div></div><div class="macro-box"><div class="val">${avgSl}</div><div class="lbl">Sleep</div></div></div>`;
-  }
-  const milestones=[{label:'15% Body Fat',weight:203,desc:'First target — visible abs'},{label:'12% Body Fat',weight:197,desc:'Lean & athletic'},{label:'10% Body Fat',weight:192,desc:'Stretch goal'}];
-  const cw=latestWeight||s.startWeight;
-  document.getElementById('milestoneList').innerHTML=milestones.map(m=>{
-    const done=cw<=m.weight;const diff=(cw-m.weight).toFixed(1);
-    return`<div style="display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid var(--border)"><div><div style="font-size:16px;font-weight:600;color:${done?'var(--success)':'var(--navy)'}">${done?'✅ ':''}${m.label}</div><div style="font-size:23px;color:var(--text-light)">${m.desc}</div></div><div style="text-align:right"><div style="font-family:'DM Serif Display',serif;font-size:23px;color:var(--navy)">${m.weight} lbs</div><div style="font-size:23px;color:${done?'var(--success)':'var(--text-light)'}">${done?'Achieved!':diff+' lbs to go'}</div></div></div>`;
-  }).join('');
-  const phase=+s.phase;const weekNum=s.week;
-  document.getElementById('goalProgress').innerHTML=Array.from({length:24},(_,i)=>`<div class="phase-dot ${i<weekNum-1?'complete':i===weekNum-1?'active':''}"></div>`).join('');
-  document.getElementById('goalStatus').textContent=`Week ${weekNum} of plan · Phase ${phase} — ${['Metabolic Restoration','Strategic Fat Loss','Mini Restoration'][phase-1]}`;
-}
-
-// ============ MEDICAL ============
-function refreshMedical(){
-  const d=DB.get('zepbound-next');
-  if(d)document.getElementById('zepbound-next').value=d;
-}
-
-// ============ DOCTOR NOTES ============
-function openAddDoctorNote(){document.getElementById('dnote-date').value=todayKey();document.getElementById('doctorNoteModal').classList.add('open');}
-function closeDoctorNoteModal(){document.getElementById('doctorNoteModal').classList.remove('open');}
-function saveDoctorNote(){
-  const n={id:Date.now(),date:document.getElementById('dnote-date').value,doctor:document.getElementById('dnote-doctor').value,type:document.getElementById('dnote-type').value,text:document.getElementById('dnote-text').value};
-  const notes=DB.get('doctorNotes')||[];notes.unshift(n);DB.set('doctorNotes',notes);
-  closeDoctorNoteModal();renderDoctorNotes();showToast('Note saved ✓');
-}
-function deleteDoctorNote(id){if(!confirm('Delete?'))return;DB.set('doctorNotes',(DB.get('doctorNotes')||[]).filter(n=>n.id!==id));renderDoctorNotes();}
-function renderDoctorNotes(){
-  const notes=DB.get('doctorNotes')||[];
-  const el=document.getElementById('doctorNotes');
-  if(!notes.length){el.innerHTML='<div class="text-sm">No personal notes yet.</div>';return;}
-  el.innerHTML=notes.map(n=>{
-    const d=new Date(n.date+'T12:00:00');
-    const typeLabel=n.type==='pre'?'Pre-appointment':'Post-appointment';
-    return`<div class="doctor-note"><div class="doctor-note-header"><div class="doctor-note-title">Dr. ${n.doctor} · ${typeLabel}</div><div style="display:flex;align-items:center;gap:8px"><div class="doctor-note-date">${d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</div><button onclick="deleteDoctorNote(${n.id})" style="font-size:23px;color:var(--danger);background:none;border:none;cursor:pointer">Delete</button></div></div><div class="doctor-note-text">${n.text.replace(/\n/g,'<br>')}</div></div>`;
-  }).join('');
-}
-
-// ============ PHASE DISPLAY ============
-function updatePhaseDisplay(){
-  const s=getSettings();
-  const labels={'1':'Phase 1 · Restore','2':'Phase 2 · Cut','3':'Phase 3 · Reset'};
-  document.getElementById('headerPhase').textContent=labels[s.phase]||'Phase 1';
-}
-
-// ============ EXPORT / CLEAR ============
-function exportData(){
-  const data={settings:DB.get('settings'),meals:DB.get('meals'),checkins:DB.get('checkins'),weeklyCheckins:DB.get('weeklyCheckins'),workouts:DB.get('workouts'),labs:DB.get('labs'),refeeds:DB.get('refeeds'),symlog:DB.get('symlog'),medlog:DB.get('medlog'),doctorNotes:DB.get('doctorNotes'),carbHistory:DB.get('carbHistory'),exportDate:new Date().toISOString()};
-  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
-  const url=URL.createObjectURL(blob);const a=document.createElement('a');
-  a.href=url;a.download='metabolic-data-'+todayKey()+'.json';a.click();
-}
-function clearAllData(){
-  if(!confirm('Delete ALL data permanently?'))return;
-  ['settings','meals','checkins','weeklyCheckins','workouts','labs','refeeds','symlog','medlog','doctorNotes','carbHistory','carbCurrentWeek'].forEach(k=>DB.del(k));
-  location.reload();
-}
-
-// ============ TOAST ============
-function showToast(msg){
-  const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
-  setTimeout(()=>t.classList.remove('show'),2500);
-}
-
-// ============ CLOUD SYNC ============
-function updateLastSynced(){
-  var el=document.getElementById('lastSynced');
-  if(!el)return;
-  var now=new Date();
-  var h=now.getHours();var m=now.getMinutes();
-  var ampm=h>=12?'pm':'am';h=h%12||12;
-  var mStr=String(m).padStart(2,'0');
-  el.textContent='Synced '+h+':'+mStr+ampm;
-}
-
-function manualSync(btn) {
-  var b = btn || document.getElementById('syncBtn');
-  if (b) { b.textContent = '⏳ Syncing...'; b.disabled = true; }
-  _syncFromCloud(function() {
-    if (typeof refreshToday === 'function') refreshToday();
-    if (typeof renderStreak === 'function') renderStreak();
-    updateLastSynced();
-    if (b) { b.textContent = '☁️ Sync'; b.disabled=false; }
-    showToast('Synced from cloud ✓');
-  });
-}
-
-function forceSync() {
-  var si = document.getElementById('syncStatus');
-  if (si) { si.textContent = 'Syncing...'; si.style.color = 'rgba(255,200,50,0.9)'; }
-  showToast('Syncing from cloud...');
-  _syncFromCloud(function() {
-    init();
-    showToast('Sync complete ✓');
-  });
-}
-
-// ============ INIT ============
-function init(){
-  document.getElementById('headerDate').textContent=new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
-  document.getElementById('weekly-date').value=todayKey();
-  updatePhaseDisplay();refreshToday();
-  const checkins=DB.get('checkins')||{};
-  if(!checkins[todayKey()])document.title='⚡ Check-In Pending · MetabolicOS';
-  // Set nav button references
-  document.querySelectorAll('.nav-btn')[0].id='nav-today';
-  document.querySelectorAll('.nav-btn')[1].id='nav-meals';
-  document.querySelectorAll('.nav-btn')[2].id='nav-weekly';
-  document.querySelectorAll('.nav-btn')[3].id='nav-progress';
-  document.querySelectorAll('.nav-btn')[4].id='nav-medical';
-  document.querySelectorAll('.nav-btn')[5].id='nav-settings';
-  // Scroll streak bar to show today
-  setTimeout(function(){
-    var bar=document.getElementById('streakBar');
-    var todayEl=bar&&bar.querySelector('.streak-day.today');
-    if(todayEl)todayEl.scrollIntoView({behavior:'auto',block:'nearest',inline:'center'});
-  },100);
-}
-init();
-
-// Sync from Firebase in background after app is rendered
-// Uses setTimeout so it never blocks the UI
-setTimeout(function() {
-  _syncFromCloud(function() {
-    // Re-render today view with any new cloud data
-    if (typeof refreshToday === 'function') refreshToday();
-    // Poll for updates from other devices every 30s
-    setInterval(function() {
-      _fbRead('_heartbeat').then(function(hb) {
-        if (!hb || !hb.device || hb.device === _deviceId) return;
-        if (String(hb.at) === localStorage.getItem('_lastHb')) return;
-        localStorage.setItem('_lastHb', String(hb.at));
-        _syncFromCloud(function() {
-          if (typeof refreshToday === 'function') refreshToday();
-        });
-      });
-    }, 30000);
-  });
-}, 500);
-</script>
-</body>
-</html>
+function renderShakes(){ renderFavorites(); }
