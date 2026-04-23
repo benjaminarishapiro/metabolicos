@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
@@ -8,365 +8,514 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>MetabolicOS</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <style>
-:root {
-  --navy:#0a1628; --navy-mid:#142240; --navy-light:#1e3260;
-  --gold:#b8860b; --gold-light:#d4a017; --gold-pale:#f5e9c8;
-  --cream:#f5f5f5; --white:#ffffff;
-  --success:#1a6b3a; --warning:#b05e00; --danger:#b00020;
-  --text:#0a0a0a; --text-light:#3a3a3a; --border:#bbbbbb;
-  --card-shadow:0 2px 16px rgba(0,0,0,0.12);
-  --radius:16px; --radius-sm:10px;
+/* ===================== TOKENS ===================== */
+:root[data-theme="dark"]{
+  --bg:#0a0b0d;--surface:#14161a;--surface-2:#1c1f24;
+  --ink:#f2f3f4;--sub:#8a8f95;
+  --accent:#c6f24e;--accent-ink:#0a0b0d;
+  --warn:#ff7a45;--warn-bg:rgba(255,122,69,0.08);--warn-border:rgba(255,122,69,0.35);
+  --good:#6bd389;--rule:#25282c;--nav-bg:rgba(20,22,26,0.96);
+  --danger:#ff5c5c;--danger-bg:rgba(255,92,92,0.08);
 }
+:root[data-theme="light"]{
+  --bg:#f5f5f3;--surface:#ffffff;--surface-2:#efefea;
+  --ink:#15171a;--sub:#6d7178;
+  --accent:#4a7a1e;--accent-ink:#ffffff;
+  --warn:#c24a15;--warn-bg:rgba(194,74,21,0.06);--warn-border:rgba(194,74,21,0.3);
+  --good:#2f8a4e;--rule:#e3e2dc;--nav-bg:rgba(255,255,255,0.96);
+  --danger:#b00020;--danger-bg:rgba(176,0,32,0.06);
+}
+
+/* ===================== RESET ===================== */
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--text);min-height:100vh;padding-bottom:100px;font-size:16px;max-width:800px;margin:0 auto;position:relative}
-.app-header{background:var(--navy);color:var(--white);padding:14px 20px 10px;position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;max-width:800px;width:100%}
-.macro-bar{position:sticky;top:62px;z-index:99;background:var(--navy-mid);padding:8px 14px;display:flex;gap:8px;justify-content:space-between;max-width:800px;width:100%}
-.macro-bubble{background:var(--navy-light);border-radius:20px;padding:5px 12px;display:flex;flex-direction:column;align-items:center;flex:1}
-.macro-bubble .mb-val{font-family:'DM Serif Display',serif;font-size:17px;color:var(--white);line-height:1.1}
-.macro-bubble .mb-lbl{font-size:11px;color:rgba(255,255,255,0.6);font-weight:600;text-transform:uppercase;letter-spacing:0.5px}
-.macro-bubble.over .mb-val{color:#ff6b6b}
-.macro-bubble.done .mb-val{color:#6bffb0}
-.app-header h1{font-family:'DM Serif Display',serif;font-size:23px;color:var(--gold-light)}
-.app-header .date-badge{font-size:23px;color:rgba(255,255,255,0.55);margin-top:2px}
-.phase-pill{background:var(--gold);color:var(--navy);font-size:23px;font-weight:600;padding:4px 10px;border-radius:20px}
-.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:800px;background:var(--white);border-top:1px solid var(--border);display:flex;z-index:100;padding-bottom:env(safe-area-inset-bottom)}
-.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;padding:9px 2px 7px;border:none;background:none;color:var(--text-light);font-size:16px;font-weight:500;cursor:pointer;gap:3px;font-family:'DM Sans',sans-serif}
-.nav-btn svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.nav-btn.active{color:var(--navy)}
-.screen{display:none;padding:14px}
+html{background:var(--surface)}
+body{font-family:'DM Sans',system-ui,sans-serif;background:var(--surface);color:var(--ink);min-height:100vh;padding-bottom:90px;font-size:15px}
+
+/* ===================== SITE WRAPPER ===================== */
+/* Single centered column — everything lives inside #app */
+#app{max-width:640px;margin:0 auto;position:relative;background:var(--bg)}
+/* sticky elements are sticky within #app, so they auto-match its width */
+
+/* ===================== HEADER ===================== */
+.top-panel{border-radius:14px;overflow:hidden;margin:10px 10px 0;border:1px solid var(--rule)}
+.app-header{background:var(--surface);padding:12px 16px 10px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;width:100%;border-bottom:1px solid var(--rule)}
+.app-header h1{font-size:18px;font-weight:900;color:var(--accent);letter-spacing:-0.5px;line-height:1.1}
+.date-badge{font-size:11px;color:var(--sub);margin-top:2px;font-family:ui-monospace,'SF Mono',monospace}
+.version-line{font-size:9px;color:var(--rule);margin-top:1px;font-family:ui-monospace,monospace}
+.phase-pill{background:var(--accent);color:var(--accent-ink);font-size:10px;font-weight:800;padding:3px 10px;border-radius:999px;letter-spacing:0.8px;text-transform:uppercase;font-family:ui-monospace,monospace;white-space:nowrap}
+
+/* Theme toggle */
+.theme-toggle{display:flex;border:1px solid var(--rule);border-radius:999px;overflow:hidden;font-size:10px;font-weight:800;letter-spacing:0.8px;font-family:ui-monospace,monospace}
+.theme-toggle button{padding:4px 9px;border:none;cursor:pointer;background:transparent;color:var(--sub);font-family:inherit;font-size:inherit;font-weight:inherit;letter-spacing:inherit}
+.theme-toggle button.active{background:var(--accent);color:var(--accent-ink)}
+
+/* Sync block — FIX 8: real timestamp from state */
+.sync-block{display:flex;flex-direction:column;align-items:flex-end;gap:3px}
+#syncBtn{background:rgba(198,242,78,0.10);border:1px solid rgba(198,242,78,0.22);color:var(--accent);border-radius:999px;padding:4px 12px;font-size:10px;font-weight:800;cursor:pointer;font-family:ui-monospace,monospace;letter-spacing:0.8px;white-space:nowrap}
+[data-theme="light"] #syncBtn{background:rgba(74,122,30,0.07);border-color:rgba(74,122,30,0.22);color:var(--accent)}
+#lastSynced{font-family:ui-monospace,monospace;font-size:9px;color:var(--sub);text-align:right}
+
+/* FIX 1: Remove macro bar — hidden via display:none */
+.macro-bar{display:none;width:100%}
+
+/* ===================== DAY STRIP — FIX 5 ===================== */
+/* Own sticky row directly below header, no card wrapper */
+.day-strip-row{background:var(--surface);border-bottom:1px solid var(--rule);padding:8px 12px 6px;width:100%}
+.streak-bar{display:flex;gap:5px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none;-webkit-overflow-scrolling:touch;cursor:grab;scroll-behavior:smooth}
+.streak-bar::-webkit-scrollbar{display:none}
+.streak-bar:active{cursor:grabbing}
+/* FIX 5: 46×60, radius 12 */
+.streak-day{flex:0 0 46px;height:60px;border-radius:12px;background:var(--surface);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;border:1px solid var(--rule);gap:2px;transition:border-color 0.12s;-webkit-tap-highlight-color:transparent}
+.streak-day .sd-name{font-size:11px;font-weight:700;color:var(--sub);font-family:ui-monospace,monospace}
+.streak-day .sd-date{font-size:10px;color:var(--sub);font-family:ui-monospace,monospace}
+/* FIX 5: today = accent bg + accent-ink text */
+.streak-day.today{background:var(--accent);border-color:var(--accent)}
+.streak-day.today .sd-name{color:var(--accent-ink);font-weight:900}
+.streak-day.today .sd-date{color:var(--accent-ink)}
+.streak-day.logged{border-color:var(--good)}
+.streak-day.logged .sd-name{color:var(--good)}
+.streak-day.logged .sd-date{color:var(--good)}
+.streak-day.future{opacity:0.28}
+.streak-day.selected{border-color:var(--accent)!important;border-width:2px}
+
+/* ===================== FAVORITES BAR — FIX 2c, 3 ===================== */
+.fav-bar-row{background:var(--surface);padding:8px 12px;width:100%}
+.fav-bar-inner{display:flex;align-items:stretch;gap:8px}
+/* scrolling favs strip */
+.fav-scroll{flex:1;display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;align-items:center;min-width:0;cursor:grab;scroll-behavior:smooth}
+.fav-scroll::-webkit-scrollbar{display:none}
+.fav-scroll:active{cursor:grabbing}
+.fav-bar-inner{overflow:hidden}
+.fav-chip{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--surface-2);border:1px solid var(--rule);border-radius:10px;padding:6px 10px;cursor:pointer;min-width:56px;gap:2px;-webkit-tap-highlight-color:transparent}
+.fav-chip:active{border-color:var(--accent)}
+.fav-chip-emoji{font-size:20px;line-height:1}
+.fav-chip-name{font-size:9px;font-weight:700;color:var(--ink);font-family:ui-monospace,monospace;letter-spacing:0.3px;max-width:60px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center}
+.fav-chip-macro{font-size:9px;color:var(--sub);font-family:ui-monospace,monospace}
+/* FIX 3: + MEAL button */
+.add-meal-btn{width:78px;flex-shrink:0;height:64px;background:var(--accent);color:var(--accent-ink);border:none;border-radius:10px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:0;-webkit-tap-highlight-color:transparent}
+.add-meal-btn:active{opacity:0.85;transform:scale(0.97)}
+.add-meal-glyph{font-size:18px;font-weight:900;line-height:1;font-family:'DM Sans',sans-serif;color:var(--accent-ink)}
+.add-meal-lbl{font-size:10px;font-weight:900;letter-spacing:0.8px;font-family:ui-monospace,monospace;color:var(--accent-ink);text-align:center}
+.fav-hint{font-family:ui-monospace,monospace;font-size:9px;color:var(--sub);letter-spacing:1.2px;text-align:center;margin-top:5px;text-transform:uppercase}
+
+/* ===================== SCREENS ===================== */
+.screen{display:none;padding:10px 10px 0;background:var(--bg)}
 .screen.active{display:block}
-.card{background:var(--white);border-radius:var(--radius);box-shadow:var(--card-shadow);padding:18px;margin-bottom:14px}
-.card-title{font-family:'DM Serif Display',serif;font-size:25px;color:var(--navy);margin-bottom:14px}
-.card-subtitle{font-size:23px;color:var(--text-light);text-transform:uppercase;letter-spacing:0.8px;font-weight:600;margin-bottom:12px}
-.macro-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
-.macro-box{background:var(--cream);border-radius:var(--radius-sm);padding:10px 6px;text-align:center}
-.macro-box .val{font-family:'DM Serif Display',serif;font-size:25px;color:var(--navy);line-height:1}
-.macro-box .lbl{font-size:23px;color:var(--text-light);margin-top:3px;font-weight:500}
-.macro-box .tgt{font-size:14px;color:var(--text);margin-top:3px;font-weight:600}
-.prog-row{margin-bottom:9px}
-.prog-label{display:flex;justify-content:space-between;font-size:23px;margin-bottom:3px}
-.prog-label .name{font-weight:600;color:var(--navy)}
-.prog-label .nums{color:var(--text-light)}
-.prog-track{height:7px;background:var(--cream);border-radius:4px;overflow:hidden}
-.prog-fill{height:100%;border-radius:4px;transition:width 0.4s ease}
-.prog-fill.protein{background:linear-gradient(90deg,#2d5a8e,#4a7fc1)}
-.prog-fill.carbs{background:linear-gradient(90deg,#c9a84c,#e8c76a)}
-.prog-fill.fat{background:linear-gradient(90deg,#6b4e9e,#9b7ec8)}
-.prog-fill.calories{background:linear-gradient(90deg,#2d7a4f,#52b87a)}
-.prog-fill.over{background:linear-gradient(90deg,#c0392b,#e74c3c)}
-.form-group{margin-bottom:13px}
-label{display:block;font-size:23px;font-weight:600;color:var(--navy);margin-bottom:5px}
-input[type="text"],input[type="number"],input[type="date"],textarea,select{width:100%;padding:11px 13px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:23px;font-family:'DM Sans',sans-serif;color:var(--text);background:var(--cream);-webkit-appearance:none}
-input:focus,textarea:focus,select:focus{outline:none;border-color:var(--navy);background:var(--white)}
+
+
+/* ===================== CARDS ===================== */
+.card{background:var(--surface);border:1px solid var(--rule);border-radius:14px;padding:16px;margin-bottom:10px}
+.card-title{font-size:15px;font-weight:800;color:var(--ink);margin-bottom:12px;letter-spacing:-0.3px}
+.card-subtitle{font-family:ui-monospace,'SF Mono',monospace;font-size:10px;font-weight:800;letter-spacing:1.6px;text-transform:uppercase;color:var(--sub);margin-bottom:10px}
+
+/* ===================== MACRO BAR CHART — FIX 4 ===================== */
+.macro-bars{display:flex;gap:6px;align-items:flex-end}
+.macro-bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px}
+.macro-bar-readout{font-family:ui-monospace,monospace;font-size:10px;color:var(--sub);font-weight:700;white-space:nowrap;text-align:center}
+.macro-bar-track{width:100%;height:95px;background:var(--surface-2);border:1px solid var(--rule);border-radius:4px;position:relative;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end}
+/* tick marks at 25/50/75 */
+.macro-bar-track::after{content:'';position:absolute;inset:0;background:
+  repeating-linear-gradient(
+    to bottom,
+    transparent 0%,
+    transparent calc(25% - 0.5px),
+    rgba(255,255,255,0.07) calc(25% - 0.5px),
+    rgba(255,255,255,0.07) 25%,
+    transparent 25%,
+    transparent calc(50% - 0.5px),
+    rgba(255,255,255,0.07) calc(50% - 0.5px),
+    rgba(255,255,255,0.07) 50%,
+    transparent 50%,
+    transparent calc(75% - 0.5px),
+    rgba(255,255,255,0.07) calc(75% - 0.5px),
+    rgba(255,255,255,0.07) 75%,
+    transparent 75%
+  );
+  pointer-events:none;z-index:1}
+[data-theme="light"] .macro-bar-track::after{background:
+  repeating-linear-gradient(
+    to bottom,
+    transparent 0%,
+    transparent calc(25% - 0.5px),
+    rgba(0,0,0,0.1) calc(25% - 0.5px),
+    rgba(0,0,0,0.1) 25%,
+    transparent 25%,
+    transparent calc(50% - 0.5px),
+    rgba(0,0,0,0.1) calc(50% - 0.5px),
+    rgba(0,0,0,0.1) 50%,
+    transparent 50%,
+    transparent calc(75% - 0.5px),
+    rgba(0,0,0,0.1) calc(75% - 0.5px),
+    rgba(0,0,0,0.1) 75%,
+    transparent 75%
+  )}
+.macro-bar-fill{width:100%;transition:height 0.4s ease;position:relative;z-index:0}
+.macro-bar-fill.protein{background:var(--accent)}
+.macro-bar-fill.carbs{background:var(--sub)}
+.macro-bar-fill.fat{background:var(--sub)}
+.macro-bar-fill.kcal{background:var(--ink)}
+.macro-bar-fill.over{background:var(--warn)}
+.macro-bar-lbl{font-family:ui-monospace,monospace;font-size:9px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:var(--sub);text-align:center}
+
+/* Keep prog-fill IDs alive for JS (hidden elements) */
+.prog-hidden{display:none}
+
+/* rem-* IDs kept alive but hidden */
+#rem-protein,#rem-carbs,#rem-fat,#rem-cal{display:none}
+/* dash-* tgt-* prog-* IDs kept alive via hidden elements */
+
+/* ===================== FORMS ===================== */
+.form-group{margin-bottom:12px}
+label{display:block;font-family:ui-monospace,monospace;font-size:10px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:var(--sub);margin-bottom:5px}
+input[type="text"],input[type="number"],input[type="date"],textarea,select{width:100%;padding:10px 12px;border:1px solid var(--rule);border-radius:8px;font-size:14px;font-family:'DM Sans',sans-serif;color:var(--ink);background:var(--surface-2);-webkit-appearance:none}
+input:focus,textarea:focus,select:focus{outline:none;border-color:var(--accent)}
 textarea{resize:vertical;min-height:70px}
+select option{background:var(--surface-2)}
+
+/* FIX 6: Sliders — accent-filled left track, right-aligned mono readout */
+.slider-group{display:flex;flex-direction:column;gap:6px}
 .slider-row{display:flex;align-items:center;gap:10px}
-input[type="range"]{flex:1;-webkit-appearance:none;height:6px;border-radius:3px;background:var(--border);outline:none;border:none;padding:0}
-input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:var(--navy);cursor:pointer;box-shadow:0 2px 6px rgba(15,31,61,0.3)}
-.slider-val{font-family:'DM Serif Display',serif;font-size:25px;color:var(--navy);min-width:28px;text-align:center}
-.btn{display:block;width:100%;padding:13px;border:none;border-radius:var(--radius-sm);font-size:23px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;transition:opacity 0.2s,transform 0.1s;text-align:center}
-.btn:active{transform:scale(0.98);opacity:0.9}
-.btn-primary{background:var(--navy);color:var(--white)}
-.btn-gold{background:var(--gold);color:var(--navy)}
-.btn-outline{background:transparent;color:var(--navy);border:1.5px solid var(--navy)}
-.btn-sm{padding:8px 14px;font-size:23px;width:auto;display:inline-block}
-.btn-danger{background:var(--danger);color:var(--white)}
-.btn-success{background:var(--success);color:var(--white)}
-.meal-item{display:flex;gap:10px;padding:12px 0;border-bottom:1px solid var(--border);align-items:flex-start}
+.slider-row-labels{display:flex;justify-content:space-between;align-items:center}
+.slider-lbl-left{font-size:11px;color:var(--sub)}
+.slider-readout{font-family:ui-monospace,monospace;font-size:14px;font-weight:900;color:var(--accent);text-align:right}
+input[type="range"]{-webkit-appearance:none;flex:1;height:6px;border-radius:3px;outline:none;border:none;padding:0;cursor:pointer;background:linear-gradient(to right,var(--accent) 0%,var(--accent) 50%,var(--surface-2) 50%,var(--surface-2) 100%)}
+input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:var(--accent);cursor:pointer;border:2px solid var(--surface)}
+input[type="range"]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;background:var(--accent);cursor:pointer;border:2px solid var(--surface)}
+/* Hidden legacy slider-val spans kept for JS compatibility */
+.slider-val{display:none}
+.text-sm{font-size:12px;color:var(--sub)}
+
+/* ===================== BUTTONS ===================== */
+.btn{display:block;width:100%;padding:12px;border:none;border-radius:10px;font-size:14px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;transition:opacity 0.15s,transform 0.1s;text-align:center}
+.btn:active{transform:scale(0.98);opacity:0.85}
+/* FIX 7: Save Check-In — accent bg + accent-ink, weight 800, letter-spacing 0.3 */
+.btn-primary{background:var(--accent);color:var(--accent-ink);font-weight:800;letter-spacing:0.3px}
+.btn-gold{background:var(--accent);color:var(--accent-ink)}
+.btn-outline{background:transparent;color:var(--ink);border:1px solid var(--rule)}
+.btn-sm{padding:7px 13px;font-size:12px;width:auto;display:inline-block;border-radius:8px;font-weight:700}
+.btn-danger{background:var(--danger);color:white}
+.btn-success{background:var(--good);color:var(--accent-ink)}
+
+/* ===================== TABS ===================== */
+.tab-bar{display:flex;gap:4px;margin-bottom:12px;background:var(--surface-2);border-radius:10px;padding:3px;border:1px solid var(--rule)}
+.tab-btn{flex:1;padding:7px;border:none;background:none;border-radius:7px;font-size:11px;font-weight:700;color:var(--sub);cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.15s}
+.tab-btn.active{background:var(--surface);color:var(--ink);border:1px solid var(--rule)}
+
+/* ===================== BOTTOM NAV ===================== */
+.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:640px;background:var(--nav-bg);border-top:1px solid var(--rule);display:flex;z-index:100;padding-bottom:env(safe-area-inset-bottom);backdrop-filter:blur(12px)}
+.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;padding:9px 2px 7px;border:none;background:none;color:var(--sub);font-size:9px;font-weight:700;cursor:pointer;gap:3px;font-family:ui-monospace,monospace;letter-spacing:0.8px;text-transform:uppercase}
+.nav-btn svg{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.nav-btn.active{color:var(--accent)}
+
+/* ===================== MEALS ===================== */
+.meal-item{display:flex;gap:10px;padding:11px 0;border-bottom:1px solid var(--rule);align-items:flex-start}
 .meal-item:last-child{border-bottom:none}
-.meal-thumb{width:52px;height:52px;border-radius:9px;object-fit:cover;background:var(--cream);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:25px}
-.meal-thumb img{width:100%;height:100%;object-fit:cover;border-radius:9px}
+.meal-thumb{width:46px;height:46px;border-radius:8px;background:var(--surface-2);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:20px;border:1px solid var(--rule)}
+.meal-thumb img{width:100%;height:100%;object-fit:cover;border-radius:8px}
 .meal-info{flex:1;min-width:0}
-.meal-name{font-weight:600;font-size:16px;color:var(--navy);margin-bottom:2px}
-.meal-macros{font-size:23px;color:var(--text-light)}
-.photo-upload-area{border:2px dashed var(--border);border-radius:var(--radius-sm);padding:20px;text-align:center;cursor:pointer;position:relative}
-.photo-upload-area input[type="file"]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;border:none;padding:0}
-.photo-preview{width:100%;max-height:180px;object-fit:cover;border-radius:var(--radius-sm);margin-top:10px;display:none}
-.ai-result{background:linear-gradient(135deg,#0f1f3d,#1a2f52);border-radius:var(--radius-sm);padding:14px;margin-top:10px;display:none}
-.ai-result .ai-label{font-size:23px;text-transform:uppercase;letter-spacing:1px;color:var(--gold);font-weight:600;margin-bottom:6px}
-.ai-result .ai-text{font-size:16px;color:rgba(255,255,255,0.9);line-height:1.5}
-.ai-macros-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:10px}
-.ai-macro-cell{background:rgba(255,255,255,0.08);border-radius:7px;padding:7px 3px;text-align:center}
-.ai-macro-cell .v{font-family:'DM Serif Display',serif;font-size:23px;color:var(--gold-light)}
-.ai-macro-cell .l{font-size:16px;color:rgba(255,255,255,0.5);margin-top:1px}
-.analyzing-spin{display:inline-block;width:16px;height:16px;border:2px solid rgba(201,168,76,0.3);border-top-color:var(--gold);border-radius:50%;animation:spin 0.8s linear infinite;vertical-align:middle;margin-right:5px}
-@keyframes spin{to{transform:rotate(360deg)}}
-.signal-card{background:var(--cream);border-radius:var(--radius-sm);padding:12px;margin-bottom:9px}
-.signal-name{font-size:16px;font-weight:600;color:var(--navy);margin-bottom:7px}
-.decision-box{border-radius:var(--radius-sm);padding:14px;margin-top:14px}
-.decision-box.green{background:#e8f5ee;border-left:4px solid var(--success)}
-.decision-box.amber{background:#fef5e7;border-left:4px solid var(--warning)}
-.decision-box.red{background:#fdecea;border-left:4px solid var(--danger)}
-.decision-title{font-weight:700;font-size:23px;margin-bottom:5px}
-.decision-text{font-size:23px;line-height:1.5;color:var(--text-light)}
-.history-entry{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid var(--border)}
-.history-entry:last-child{border-bottom:none}
-.history-val{font-family:'DM Serif Display',serif;font-size:23px;color:var(--navy)}
-.history-delta{font-size:23px}
-.history-delta.down{color:var(--success)}
-.history-delta.up{color:var(--danger)}
-.modal-overlay{position:fixed;inset:0;background:rgba(15,31,61,0.6);z-index:200;display:none;align-items:flex-end}
+.meal-name{font-weight:700;font-size:13px;color:var(--ink);margin-bottom:2px}
+/* FIX 10: Edit/Delete mono 11px, gap 8px, correct colors */
+.meal-macros{font-size:11px;color:var(--sub);font-family:ui-monospace,monospace}
+.meal-actions{display:flex;gap:8px;margin-top:4px}
+.meal-edit-btn{font-size:11px;color:var(--sub);background:none;border:none;cursor:pointer;font-family:ui-monospace,monospace;font-weight:700;padding:0}
+.meal-del-btn{font-size:11px;color:var(--warn);background:none;border:none;cursor:pointer;font-family:ui-monospace,monospace;font-weight:700;padding:0}
+
+/* ===================== SHAKE / FAVORITES ===================== */
+.shake-card{background:var(--surface-2);border-radius:10px;padding:11px;margin-bottom:7px;border:1px solid var(--rule);transition:border-color 0.15s}
+.shake-card:active{border-color:var(--accent)}
+.shake-card-name{font-weight:700;font-size:13px;color:var(--ink)}
+.shake-card-macros{font-size:11px;color:var(--sub);margin-top:2px;font-family:ui-monospace,monospace}
+
+/* ===================== BADGES ===================== */
+.badge{display:inline-block;padding:3px 8px;border-radius:999px;font-size:10px;font-weight:800;font-family:ui-monospace,monospace;letter-spacing:0.6px}
+.badge-green{background:rgba(107,211,137,0.15);color:var(--good);border:1px solid rgba(107,211,137,0.3)}
+.badge-amber{background:rgba(255,122,69,0.12);color:var(--warn);border:1px solid var(--warn-border)}
+.badge-red{background:var(--danger-bg);color:var(--danger)}
+.badge-navy{background:var(--accent);color:var(--accent-ink)}
+
+/* ===================== SIGNALS / DECISIONS ===================== */
+.signal-card{background:var(--surface-2);border-radius:10px;padding:11px;margin-bottom:8px;border:1px solid var(--rule)}
+.signal-name{font-size:13px;font-weight:700;color:var(--ink);margin-bottom:6px}
+.decision-box{border-radius:10px;padding:12px;margin-top:12px;border:1px solid var(--rule)}
+.decision-box.green{border-color:rgba(107,211,137,0.35);background:rgba(107,211,137,0.06)}
+.decision-box.amber{border-color:var(--warn-border);background:var(--warn-bg)}
+.decision-box.red{border-color:rgba(255,92,92,0.35);background:var(--danger-bg)}
+.decision-title{font-weight:800;font-size:13px;margin-bottom:4px;color:var(--ink)}
+.decision-text{font-size:12px;line-height:1.55;color:var(--sub)}
+
+/* ===================== MODALS ===================== */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:200;display:none;align-items:flex-end}
 .modal-overlay.open{display:flex}
-.modal-sheet{background:var(--white);width:100%;border-radius:20px 20px 0 0;padding:18px;max-height:92vh;overflow-y:auto;animation:slideUp 0.3s ease}
+.modal-sheet{background:var(--surface);width:100%;border-radius:18px 18px 0 0;padding:18px;max-height:92vh;overflow-y:auto;animation:slideUp 0.28s ease;border-top:1px solid var(--rule)}
 @keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
-.modal-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 14px}
-.modal-title{font-family:'DM Serif Display',serif;font-size:23px;color:var(--navy);margin-bottom:18px}
+.modal-handle{width:32px;height:3px;background:var(--rule);border-radius:2px;margin:0 auto 14px}
+.modal-title{font-size:17px;font-weight:900;color:var(--ink);margin-bottom:16px;letter-spacing:-0.3px}
 .row-2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
 .row-4{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
-.mt-8{margin-top:8px}
-.mt-12{margin-top:12px}
-.mb-12{margin-bottom:12px}
-.text-sm{font-size:23px;color:var(--text-light)}
-.empty-state{text-align:center;padding:32px 16px;color:var(--text-light)}
-.empty-state .icon{font-size:40px;margin-bottom:10px}
-.empty-state p{font-size:16px;line-height:1.5}
-.badge{display:inline-block;padding:3px 8px;border-radius:20px;font-size:23px;font-weight:600}
-.badge-green{background:#e8f5ee;color:var(--success)}
-.badge-amber{background:#fef5e7;color:var(--warning)}
-.badge-red{background:#fdecea;color:var(--danger)}
-.badge-navy{background:var(--navy);color:var(--white)}
-.divider{height:1px;background:var(--border);margin:14px 0}
-.section-header{font-family:'DM Serif Display',serif;font-size:23px;color:var(--navy);margin-bottom:10px;margin-top:4px}
-.streak-bar{display:flex;gap:6px;margin-top:7px;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
-.streak-bar::-webkit-scrollbar{display:none}
-.streak-day{flex:0 0 52px;height:58px;border-radius:10px;background:var(--cream);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;border:2px solid transparent;transition:border-color 0.15s;gap:2px;-webkit-tap-highlight-color:transparent}
-.streak-day:active{opacity:0.8}
-.streak-day .sd-name{font-size:13px;font-weight:700;color:var(--text-light)}
-.streak-day .sd-date{font-size:12px;color:var(--text-light);font-weight:500}
-.streak-day.logged{background:var(--navy)}
-.streak-day.logged .sd-name{color:var(--gold-light)}
-.streak-day.logged .sd-date{color:rgba(255,255,255,0.6)}
-.streak-day.today{border-color:var(--gold);background:var(--white)}
-.streak-day.today .sd-name{color:var(--navy);font-weight:800}
-.streak-day.today .sd-date{color:var(--navy)}
-.streak-day.future{background:var(--cream);border-color:var(--border)}
-.streak-day.future .sd-name{color:var(--border)}
-.streak-day.future .sd-date{color:var(--border)}
-.streak-day.selected{border-color:var(--gold)!important}
-.streak-day.today{background:var(--gold);color:var(--navy)}
-.toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--navy);color:var(--white);padding:11px 18px;border-radius:30px;font-size:23px;font-weight:500;opacity:0;transition:opacity 0.3s,transform 0.3s;z-index:999;white-space:nowrap}
-.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-.protein-alert{background:#fdecea;border:1.5px solid var(--danger);border-radius:var(--radius-sm);padding:12px;margin-bottom:14px;display:none}
-.protein-alert-text{font-size:16px;color:var(--danger);font-weight:600}
-.protein-alert-sub{font-size:23px;color:var(--danger);opacity:0.8;margin-top:3px}
-.phase-tracker{display:flex;gap:5px;margin-bottom:14px}
-.phase-dot{flex:1;height:6px;border-radius:3px;background:var(--border)}
-.phase-dot.active{background:var(--gold)}
-.phase-dot.complete{background:var(--navy)}
-.shake-card{background:var(--cream);border-radius:var(--radius-sm);padding:12px;margin-bottom:8px;cursor:pointer;border:1.5px solid transparent;transition:border-color 0.2s}
-.shake-card:active{border-color:var(--gold)}
-.shake-card-name{font-weight:600;font-size:16px;color:var(--navy)}
-.shake-card-macros{font-size:23px;color:var(--text-light);margin-top:3px}
-.lab-entry{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)}
-.lab-entry:last-child{border-bottom:none}
-.lab-name{font-size:16px;font-weight:600;color:var(--navy)}
-.lab-val{font-family:'DM Serif Display',serif;font-size:25px;color:var(--navy)}
-.lab-date{font-size:23px;color:var(--text-light)}
-.lab-status{font-size:23px;margin-top:2px}
-.symptom-check{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)}
-.symptom-check:last-child{border-bottom:none}
-.symptom-label{font-size:16px;color:var(--navy)}
-.symptom-btns{display:flex;gap:6px}
-.sym-btn{padding:5px 10px;border-radius:20px;border:1.5px solid var(--border);font-size:23px;font-weight:600;cursor:pointer;background:var(--white);color:var(--text-light);font-family:'DM Sans',sans-serif}
-.sym-btn.active-none{background:var(--success);color:var(--white);border-color:var(--success)}
-.sym-btn.active-mild{background:var(--warning);color:var(--white);border-color:var(--warning)}
-.sym-btn.active-notable{background:var(--danger);color:var(--white);border-color:var(--danger)}
-.carb-week-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)}
-.carb-week-row:last-child{border-bottom:none}
-.med-check{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid var(--border)}
+
+/* ===================== MISC ===================== */
+.mt-8{margin-top:8px}.mt-12{margin-top:12px}.mb-12{margin-bottom:12px}
+.divider{height:1px;background:var(--rule);margin:12px 0}
+.section-header{font-family:ui-monospace,monospace;font-size:10px;font-weight:800;letter-spacing:1.6px;text-transform:uppercase;color:var(--sub);margin-bottom:8px;margin-top:4px}
+.empty-state{text-align:center;padding:28px 16px;color:var(--sub)}
+.empty-state .icon{font-size:34px;margin-bottom:8px}
+.empty-state p{font-size:13px;line-height:1.5}
+.protein-alert{background:var(--warn-bg);border:1px solid var(--warn-border);border-radius:10px;padding:11px;margin-bottom:10px;display:none}
+.protein-alert-text{font-size:13px;color:var(--warn);font-weight:700}
+.protein-alert-sub{font-size:11px;color:var(--warn);opacity:0.85;margin-top:2px}
+
+/* AI */
+.photo-upload-area{border:1px dashed var(--rule);border-radius:8px;padding:18px;text-align:center;cursor:pointer;position:relative;background:var(--surface-2)}
+.photo-upload-area input[type="file"]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;border:none;padding:0}
+.photo-preview{width:100%;max-height:180px;object-fit:cover;border-radius:8px;margin-top:10px;display:none}
+.ai-result{background:var(--surface-2);border:1px solid var(--rule);border-radius:10px;padding:12px;margin-top:10px;display:none}
+.ai-result .ai-label{font-family:ui-monospace,monospace;font-size:10px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:var(--accent);margin-bottom:6px}
+.ai-result .ai-text{font-size:13px;color:var(--ink);line-height:1.5}
+.ai-macros-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-top:8px}
+.ai-macro-cell{background:var(--surface);border-radius:6px;padding:6px 3px;text-align:center;border:1px solid var(--rule)}
+.ai-macro-cell .v{font-size:14px;font-weight:900;color:var(--accent)}
+.ai-macro-cell .l{font-size:9px;color:var(--sub);margin-top:1px;font-family:ui-monospace,monospace}
+.analyzing-spin{display:inline-block;width:14px;height:14px;border:2px solid rgba(198,242,78,0.25);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite;vertical-align:middle;margin-right:4px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Meds */
+.med-check{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--rule)}
 .med-check:last-child{border-bottom:none}
-.med-name{font-size:16px;font-weight:600;color:var(--navy)}
-.med-sub{font-size:23px;color:var(--text-light);margin-top:2px}
-.toggle-btn{width:44px;height:26px;border-radius:13px;border:none;cursor:pointer;position:relative;transition:background 0.2s;background:var(--border);flex-shrink:0}
-.toggle-btn.on{background:var(--success)}
-.toggle-btn::after{content:'';position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:white;transition:left 0.2s}
-.toggle-btn.on::after{left:21px}
-.steps-bar{display:flex;gap:3px;align-items:flex-end;height:48px}
-.steps-col{flex:1;background:var(--cream);border-radius:3px 3px 0 0;min-height:4px;position:relative;transition:height 0.3s}
-.steps-col.today{background:var(--gold)}
-.steps-col.goal{background:var(--navy)}
-.steps-col-label{position:absolute;bottom:-16px;left:50%;transform:translateX(-50%);font-size:16px;color:var(--text-light);white-space:nowrap}
-.refeed-badge{display:inline-flex;align-items:center;gap:5px;background:var(--navy-light);color:var(--white);padding:4px 10px;border-radius:20px;font-size:23px;font-weight:600}
-.tab-bar{display:flex;gap:6px;margin-bottom:14px;background:var(--cream);border-radius:var(--radius-sm);padding:4px}
-.tab-btn{flex:1;padding:8px;border:none;background:none;border-radius:8px;font-size:23px;font-weight:600;color:var(--text-light);cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.2s}
-.tab-btn.active{background:var(--white);color:var(--navy);box-shadow:0 1px 4px rgba(0,0,0,0.1)}
-.doctor-note{padding:12px 0;border-bottom:1px solid var(--border)}
+.med-name{font-size:13px;font-weight:700;color:var(--ink)}
+.med-sub{font-size:11px;color:var(--sub);margin-top:2px}
+.toggle-btn{width:42px;height:24px;border-radius:12px;border:none;cursor:pointer;position:relative;transition:background 0.2s;background:var(--rule);flex-shrink:0}
+.toggle-btn.on{background:var(--good)}
+.toggle-btn::after{content:'';position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:var(--ink);transition:left 0.2s}
+.toggle-btn.on::after{left:21px;background:white}
+
+/* FIX 9: Symptom chips — rule border, active = accent + accent-ink */
+.symptom-check{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--rule)}
+.symptom-check:last-child{border-bottom:none}
+.symptom-label{font-size:13px;color:var(--ink)}
+.symptom-btns{display:flex;gap:5px}
+.sym-btn{padding:4px 9px;border-radius:999px;border:1px solid var(--rule);font-size:10px;font-weight:700;cursor:pointer;background:var(--surface-2);color:var(--sub);font-family:ui-monospace,monospace}
+.sym-btn.active-none{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.sym-btn.active-mild{background:var(--warn);color:#fff;border-color:var(--warn)}
+.sym-btn.active-notable{background:var(--danger);color:#fff;border-color:var(--danger)}
+
+/* History / labs / steps / misc */
+.history-entry{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--rule)}
+.history-entry:last-child{border-bottom:none}
+.history-val{font-size:18px;font-weight:900;color:var(--ink);letter-spacing:-0.5px}
+.history-delta{font-size:11px;font-family:ui-monospace,monospace;font-weight:700}
+.history-delta.down{color:var(--good)}.history-delta.up{color:var(--warn)}
+.lab-entry{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--rule)}
+.lab-entry:last-child{border-bottom:none}
+.lab-name{font-size:13px;font-weight:700;color:var(--ink)}
+.lab-val{font-size:20px;font-weight:900;color:var(--ink);letter-spacing:-0.5px}
+.lab-date{font-size:10px;color:var(--sub);font-family:ui-monospace,monospace}
+.lab-status{font-size:10px;margin-top:2px;font-family:ui-monospace,monospace;font-weight:700}
+.doctor-note{padding:11px 0;border-bottom:1px solid var(--rule)}
 .doctor-note:last-child{border-bottom:none}
-.doctor-note-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
-.doctor-note-title{font-size:16px;font-weight:600;color:var(--navy)}
-.doctor-note-date{font-size:23px;color:var(--text-light)}
-.doctor-note-text{font-size:23px;color:var(--text-light);line-height:1.5}
+.doctor-note-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px}
+.doctor-note-title{font-size:13px;font-weight:700;color:var(--ink)}
+.doctor-note-date{font-size:10px;color:var(--sub);font-family:ui-monospace,monospace}
+.doctor-note-text{font-size:12px;color:var(--sub);line-height:1.5}
+.refeed-badge{display:inline-flex;align-items:center;gap:4px;background:rgba(198,242,78,0.12);color:var(--accent);border:1px solid rgba(198,242,78,0.25);padding:3px 9px;border-radius:999px;font-size:10px;font-weight:800;font-family:ui-monospace,monospace}
+.steps-bar{display:flex;gap:3px;align-items:flex-end;height:48px}
+.steps-col{flex:1;background:var(--surface-2);border-radius:3px 3px 0 0;min-height:4px;position:relative;border:1px solid var(--rule)}
+.steps-col.today{background:var(--accent);border-color:var(--accent)}
+.steps-col.goal{background:var(--good);border-color:var(--good)}
+.steps-col-label{position:absolute;bottom:-16px;font-size:8px;color:var(--sub);white-space:nowrap;font-family:ui-monospace,monospace}
+.phase-tracker{display:flex;gap:4px;margin-bottom:12px}
+.phase-dot{flex:1;height:4px;border-radius:2px;background:var(--surface-2);border:1px solid var(--rule)}
+.phase-dot.active{background:var(--accent);border-color:var(--accent)}
+.phase-dot.complete{background:var(--good);border-color:var(--good)}
+.carb-week-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--rule)}
+.carb-week-row:last-child{border-bottom:none}
+.macro-box{background:var(--surface-2);border-radius:10px;padding:12px 8px;text-align:center;border:1px solid var(--rule)}
+.macro-box .val{font-size:26px;font-weight:900;color:var(--ink);letter-spacing:-1px;line-height:1}
+.macro-box .lbl{font-family:ui-monospace,monospace;font-size:9px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:var(--sub);margin-top:4px}
+.macro-box .tgt{font-size:11px;color:var(--sub);margin-top:3px}
+.toast{position:fixed;bottom:100px translateY(20px);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:999px;font-size:12px;font-weight:700;opacity:0;transition:opacity 0.3s,transform 0.3s;z-index:999;white-space:nowrap;font-family:ui-monospace,monospace}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 </style>
 </head>
 <body>
 
+<div id="app">
+<!-- HEADER — FIX 2a -->
+<div class="top-panel">
 <div class="app-header">
   <div>
     <h1>MetabolicOS</h1>
     <div class="date-badge" id="headerDate"></div>
-    <div style="font-size:13px;color:rgba(255,255,255,0.4);margin-top:1px">v5.24 · Apr 22, 2026 2:40 PM PT</div>
+    <div class="version-line">v5.32 · Apr 22, 2026 4:18 PM PT</div>
   </div>
   <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
-    <span class="phase-pill" id="headerPhase">Phase 1</span>
-    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px">
-    <button onclick="manualSync(this)" id="syncBtn" style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.25);color:white;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap">☁️ Sync</button>
-    <span id="lastSynced" style="font-size:10px;color:rgba(255,255,255,0.4)">Never synced</span>
-  </div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <span class="phase-pill" id="headerPhase">Phase 1</span>
+      <div class="theme-toggle">
+        <button id="theme-dark" class="active" onclick="setTheme('dark')">◐ DARK</button>
+        <button id="theme-light" onclick="setTheme('light')">☀ LIGHT</button>
+      </div>
+    </div>
+    <!-- FIX 8: sync block — real lastSynced from state via updateLastSynced() -->
+    <div class="sync-block">
+      <button onclick="manualSync(this)" id="syncBtn">☁ SYNC</button>
+      <span id="lastSynced">Never synced</span>
+    </div>
   </div>
 </div>
 
-<!-- Sticky macro remaining bar -->
+<!-- FIX 1: macro-bar hidden (IDs kept alive for JS) -->
 <div class="macro-bar">
-  <div class="macro-bubble" id="mb-protein">
-    <div class="mb-val" id="mb-protein-val">210g</div>
-    <div class="mb-lbl">Protein</div>
-  </div>
-  <div class="macro-bubble" id="mb-carbs">
-    <div class="mb-val" id="mb-carbs-val">175g</div>
-    <div class="mb-lbl">Carbs</div>
-  </div>
-  <div class="macro-bubble" id="mb-fat">
-    <div class="mb-val" id="mb-fat-val">70g</div>
-    <div class="mb-lbl">Fat</div>
-  </div>
-  <div class="macro-bubble" id="mb-cal">
-    <div class="mb-val" id="mb-cal-val">2100</div>
-    <div class="mb-lbl">Calories</div>
-  </div>
+  <div class="macro-bubble" id="mb-protein"><div class="mb-val" id="mb-protein-val">—</div><div class="mb-lbl">Protein</div></div>
+  <div class="macro-bubble" id="mb-carbs"><div class="mb-val" id="mb-carbs-val">—</div><div class="mb-lbl">Carbs</div></div>
+  <div class="macro-bubble" id="mb-fat"><div class="mb-val" id="mb-fat-val">—</div><div class="mb-lbl">Fat</div></div>
+  <div class="macro-bubble" id="mb-cal"><div class="mb-val" id="mb-cal-val">—</div><div class="mb-lbl">Kcal</div></div>
 </div>
+
+<!-- FIX 2b: Day strip — own sticky row -->
+<div class="day-strip-row">
+  <div class="streak-bar" id="streakBar"></div>
+</div>
+
+
+
+<!-- FIX 2c: Favorites bar — own row directly below day strip -->
+<div class="fav-bar-row" id="favBarRow">
+  <div class="fav-bar-inner">
+    <div class="fav-scroll" id="favBarScroll"></div>
+    <!-- FIX 3: + MEAL button -->
+    <button class="add-meal-btn" onclick="openLogMeal()">
+      <span class="add-meal-glyph">＋</span>
+      <span class="add-meal-lbl">MEAL</span>
+    </button>
+  </div>
+  <div class="fav-hint">⭐ tap a favorite to log instantly</div>
+</div>
+</div><!-- end top-panel -->
 
 <!-- ===================== TODAY SCREEN ===================== -->
 <div class="screen active" id="screen-today">
 
-  <!-- Protein alert -->
   <div class="protein-alert" id="proteinAlert">
-    <div class="protein-alert-text">⚠️ Protein behind target</div>
+    <div class="protein-alert-text">⚠ PROTEIN BEHIND TARGET</div>
     <div class="protein-alert-sub" id="proteinAlertSub"></div>
   </div>
 
-  <!-- Streak -->
-  <div class="card">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-      <div style="display:flex;align-items:center;gap:10px">
-        <div class="card-subtitle" style="margin:0">Protein Streak</div>
-        <button onclick="goToToday()" style="background:var(--navy);color:var(--white);border:none;border-radius:14px;padding:4px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif">Today</button>
-      </div>
-      <span id="streakCount" class="badge badge-green">0 day streak</span>
-    </div>
-    <div class="streak-bar" id="streakBar"></div>
-  </div>
-
-  <!-- Macros -->
-  <div class="card">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-      <div>
-        <div class="card-title" style="margin:0">Today's Macros</div>
-        <div id="viewingDateLabel" style="font-size:13px;color:var(--text-light);margin-top:2px">Today</div>
-      </div>
-      <div style="display:flex;gap:6px">
-        <button class="btn btn-outline btn-sm" onclick="openShakeQuickLog()">⭐ Favorites</button>
-        <button class="btn btn-gold btn-sm" onclick="openLogMeal()">+ Meal</button>
-      </div>
-    </div>
-    <div class="macro-summary" style="grid-template-columns:repeat(2,1fr)">
-      <div class="macro-box">
-        <div class="val" id="dash-protein">0</div>
-        <div class="lbl">Protein (g)</div>
-        <div class="tgt">Target: <span id="tgt-protein">210</span>g</div>
-        <div id="rem-protein" style="font-size:13px;color:var(--success);font-weight:700;margin-top:3px"></div>
-      </div>
-      <div class="macro-box">
-        <div class="val" id="dash-carbs">0</div>
-        <div class="lbl">Carbs (g)</div>
-        <div class="tgt">Target: <span id="tgt-carbs">175</span>g</div>
-        <div id="rem-carbs" style="font-size:13px;color:var(--success);font-weight:700;margin-top:3px"></div>
-      </div>
-      <div class="macro-box">
-        <div class="val" id="dash-fat">0</div>
-        <div class="lbl">Fat (g)</div>
-        <div class="tgt">Target: <span id="tgt-fat">70</span>g</div>
-        <div id="rem-fat" style="font-size:13px;color:var(--success);font-weight:700;margin-top:3px"></div>
-      </div>
-      <div class="macro-box">
-        <div class="val" id="dash-cal">0</div>
-        <div class="lbl">Calories</div>
-        <div class="tgt">Target: <span id="tgt-cal">2100</span></div>
-        <div id="rem-cal" style="font-size:13px;color:var(--success);font-weight:700;margin-top:3px"></div>
-      </div>
-    </div>
-    <div class="prog-row">
-      <div class="prog-label"><span class="name">Protein</span><span class="nums" id="prog-protein-lbl">0/210g</span></div>
-      <div class="prog-track"><div class="prog-fill protein" id="prog-protein" style="width:0%"></div></div>
-    </div>
-    <div class="prog-row">
-      <div class="prog-label"><span class="name">Carbohydrates</span><span class="nums" id="prog-carbs-lbl">0/175g</span></div>
-      <div class="prog-track"><div class="prog-fill carbs" id="prog-carbs" style="width:0%"></div></div>
-    </div>
-    <div class="prog-row">
-      <div class="prog-label"><span class="name">Fat</span><span class="nums" id="prog-fat-lbl">0/70g</span></div>
-      <div class="prog-track"><div class="prog-fill fat" id="prog-fat" style="width:0%"></div></div>
-    </div>
-    <div class="prog-row">
-      <div class="prog-label"><span class="name">Calories</span><span class="nums" id="prog-cal-lbl">0/2100</span></div>
-      <div class="prog-track"><div class="prog-fill calories" id="prog-cal" style="width:0%"></div></div>
-    </div>
-  </div>
-
-  <!-- Daily Check-In -->
+  <!-- FIX 4: Macro card — vertical bar charts, no grid of numbers -->
   <div class="card">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-      <div class="card-title" style="margin:0">Daily Check-In</div>
-      <span id="checkin-status" class="badge badge-amber">Pending</span>
+      <div>
+        <div class="card-title" style="margin:0">Today's Macros</div>
+        <div id="viewingDateLabel" style="font-size:10px;color:var(--sub);margin-top:2px;font-family:ui-monospace,monospace;letter-spacing:0.8px;text-transform:uppercase">TODAY</div>
+      </div>
+      <button onclick="goToToday()" style="background:var(--accent);color:var(--accent-ink);border:none;border-radius:999px;padding:3px 10px;font-size:9px;font-weight:800;cursor:pointer;font-family:ui-monospace,monospace;letter-spacing:0.8px">TODAY</button>
     </div>
+    <div class="macro-bars">
+      <div class="macro-bar-col">
+        <div class="macro-bar-readout" id="macro-readout-protein">0/<span id="tgt-protein">210</span>g</div>
+        <div class="macro-bar-track"><div class="macro-bar-fill protein" id="macro-fill-protein" style="height:0%"></div></div>
+        <div class="macro-bar-lbl">Protein</div>
+      </div>
+      <div class="macro-bar-col">
+        <div class="macro-bar-readout" id="macro-readout-carbs">0/<span id="tgt-carbs">175</span>g</div>
+        <div class="macro-bar-track"><div class="macro-bar-fill carbs" id="macro-fill-carbs" style="height:0%"></div></div>
+        <div class="macro-bar-lbl">Carbs</div>
+      </div>
+      <div class="macro-bar-col">
+        <div class="macro-bar-readout" id="macro-readout-fat">0/<span id="tgt-fat">70</span>g</div>
+        <div class="macro-bar-track"><div class="macro-bar-fill fat" id="macro-fill-fat" style="height:0%"></div></div>
+        <div class="macro-bar-lbl">Fat</div>
+      </div>
+      <div class="macro-bar-col">
+        <div class="macro-bar-readout" id="macro-readout-cal">0/<span id="tgt-cal">2100</span></div>
+        <div class="macro-bar-track"><div class="macro-bar-fill kcal" id="macro-fill-cal" style="height:0%"></div></div>
+        <div class="macro-bar-lbl">Kcal</div>
+      </div>
+    </div>
+    <!-- Hidden elements to keep JS IDs alive -->
+    <div class="prog-hidden">
+      <span id="dash-protein"></span><span id="dash-carbs"></span><span id="dash-fat"></span><span id="dash-cal"></span>
+      <span id="rem-protein"></span><span id="rem-carbs"></span><span id="rem-fat"></span><span id="rem-cal"></span>
+      <div id="prog-protein" style="width:0%"></div><div id="prog-carbs" style="width:0%"></div>
+      <div id="prog-fat" style="width:0%"></div><div id="prog-cal" style="width:0%"></div>
+      <span id="prog-protein-lbl"></span><span id="prog-carbs-lbl"></span><span id="prog-fat-lbl"></span><span id="prog-cal-lbl"></span>
+    </div>
+  </div>
+
+  <!-- FIX 2e: Streak + check-in status 2-col grid -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+    <div class="card" style="margin-bottom:0">
+      <div class="card-subtitle" style="margin-bottom:6px">Streak</div>
+      <div id="streakCount" class="badge badge-green" style="font-size:14px;font-weight:900;padding:4px 0;display:block;text-align:center">0 days</div>
+    </div>
+    <div class="card" style="margin-bottom:0">
+      <div class="card-subtitle" style="margin-bottom:6px">Check-In</div>
+      <span id="checkin-status" class="badge badge-amber" style="font-size:14px;font-weight:900;padding:4px 0;display:block;text-align:center">Pending</span>
+    </div>
+  </div>
+
+  <!-- FIX 2f: Daily Check-In -->
+  <div class="card">
+    <div class="card-title">Daily Check-In</div>
+
     <div class="form-group">
       <label>Weight (lbs)</label>
       <input type="number" id="daily-weight" placeholder="e.g. 231" step="0.1">
     </div>
+
+    <!-- FIX 6: slider with accent-filled track + right-aligned mono readout -->
     <div class="form-group">
-      <label>Energy Level &nbsp;<span class="slider-val" id="energy-val">5</span>/10</label>
-      <div class="slider-row">
-        <span class="text-sm">Low</span>
-        <input type="range" min="1" max="10" value="5" id="daily-energy" oninput="document.getElementById('energy-val').textContent=this.value">
-        <span class="text-sm">High</span>
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">
+        <label style="margin:0">Energy Level</label>
+        <span class="slider-readout" id="energy-display">5/10</span>
       </div>
+      <input type="range" min="1" max="10" value="5" id="daily-energy"
+        oninput="updateSlider(this,'energy-val','energy-display',10)">
+      <span class="slider-val" id="energy-val">5</span>
     </div>
+
     <div class="form-group">
-      <label>Hunger Level &nbsp;<span class="slider-val" id="hunger-val">5</span>/10</label>
-      <div class="slider-row">
-        <span class="text-sm">None</span>
-        <input type="range" min="1" max="10" value="5" id="daily-hunger" oninput="document.getElementById('hunger-val').textContent=this.value">
-        <span class="text-sm">Ravenous</span>
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">
+        <label style="margin:0">Hunger Level</label>
+        <span class="slider-readout" id="hunger-display">5/10</span>
       </div>
+      <input type="range" min="1" max="10" value="5" id="daily-hunger"
+        oninput="updateSlider(this,'hunger-val','hunger-display',10)">
+      <span class="slider-val" id="hunger-val">5</span>
     </div>
+
     <div class="form-group">
-      <label>Sleep Quality &nbsp;<span class="slider-val" id="sleep-val">7</span>/10</label>
-      <div class="slider-row">
-        <span class="text-sm">Poor</span>
-        <input type="range" min="1" max="10" value="7" id="daily-sleep" oninput="document.getElementById('sleep-val').textContent=this.value">
-        <span class="text-sm">Great</span>
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">
+        <label style="margin:0">Sleep Quality</label>
+        <span class="slider-readout" id="sleep-display">7/10</span>
       </div>
+      <input type="range" min="1" max="10" value="7" id="daily-sleep"
+        oninput="updateSlider(this,'sleep-val','sleep-display',10)">
+      <span class="slider-val" id="sleep-val">7</span>
     </div>
+
     <div class="form-group">
       <label>Steps Today</label>
       <input type="number" id="daily-steps" placeholder="e.g. 8500">
     </div>
     <div class="form-group">
       <label>Notes (optional)</label>
-      <textarea id="daily-notes" placeholder="How are you feeling? Anything notable?"></textarea>
+      <textarea id="daily-notes" placeholder="How are you feeling?"></textarea>
     </div>
+    <!-- FIX 7: btn-primary is accent + accent-ink, weight 800, letter-spacing 0.3 -->
     <button class="btn btn-primary" onclick="saveDailyCheckin()">Save Check-In</button>
   </div>
 
-  <!-- Medications -->
+  <!-- FIX 2g: Medications -->
   <div class="card">
     <div class="card-title">Medications Today</div>
     <div id="medChecklist"></div>
     <button class="btn btn-outline mt-12 btn-sm" style="width:100%" onclick="saveMedications()">Save Medications</button>
   </div>
 
-  <!-- Symptoms -->
+  <!-- FIX 2h: Symptoms -->
   <div class="card">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
       <div class="card-title" style="margin:0">Symptom Watch</div>
@@ -376,7 +525,7 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;hei
     <button class="btn btn-outline mt-12 btn-sm" style="width:100%" onclick="saveSymptoms()">Save Symptoms</button>
   </div>
 
-  <!-- Today's meals -->
+  <!-- FIX 2i: Meals Today -->
   <div class="card">
     <div class="card-title">Meals Today</div>
     <div id="todayMealsList"><div class="empty-state"><div class="icon">🍽</div><p>No meals logged yet.</p></div></div>
@@ -389,17 +538,15 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;hei
     <button class="tab-btn active" onclick="showMealsTab('log',this)">Meal Log</button>
     <button class="tab-btn" onclick="showMealsTab('fav',this)">⭐ Favorites</button>
   </div>
-
   <div id="meals-tab-log">
     <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
         <div class="card-title" style="margin:0">All Meals</div>
         <button class="btn btn-gold btn-sm" onclick="openLogMeal()">+ Add Meal</button>
       </div>
       <div id="allMealsList"><div class="empty-state"><div class="icon">🍽</div><p>No meals logged yet.</p></div></div>
     </div>
   </div>
-
   <div id="meals-tab-fav" style="display:none">
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
@@ -419,119 +566,80 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;hei
     <button class="tab-btn" onclick="showWeeklyTab('carbtrack',this)">Carb Tracker</button>
     <button class="tab-btn" onclick="showWeeklyTab('history',this)">History</button>
   </div>
-
-  <!-- Weekly check-in tab -->
   <div id="weekly-tab-checkin">
     <div class="card">
       <div class="card-title">Weekly Check-In</div>
       <div class="text-sm mb-12">Answer every Sunday. The app gives you your adjustment for next week.</div>
-      <div class="form-group">
-        <label>Week Ending</label>
-        <input type="date" id="weekly-date">
-      </div>
+      <div class="form-group"><label>Week Ending</label><input type="date" id="weekly-date"></div>
       <div class="row-2">
-        <div class="form-group">
-          <label>This Week Avg (lbs)</label>
-          <input type="number" id="weekly-avg-weight" step="0.1" placeholder="230.4">
-        </div>
-        <div class="form-group">
-          <label>Last Week Avg (lbs)</label>
-          <input type="number" id="weekly-prev-weight" step="0.1" placeholder="231.8">
-        </div>
+        <div class="form-group"><label>This Week Avg (lbs)</label><input type="number" id="weekly-avg-weight" step="0.1" placeholder="230.4"></div>
+        <div class="form-group"><label>Last Week Avg (lbs)</label><input type="number" id="weekly-prev-weight" step="0.1" placeholder="231.8"></div>
       </div>
       <div class="signal-card">
         <div class="signal-name">1. Average Energy This Week</div>
-        <div class="slider-row">
-          <span class="text-sm">Terrible</span>
-          <input type="range" min="1" max="10" value="5" id="w-energy" oninput="document.getElementById('w-energy-val').textContent=this.value">
-          <span class="text-sm">Excellent</span>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">
+          <span class="text-sm">Terrible → Excellent</span>
+          <span class="slider-readout" id="w-energy-display">5/10</span>
         </div>
-        <div style="text-align:center;margin-top:3px;font-family:'DM Serif Display',serif;font-size:23px;color:var(--navy)" id="w-energy-val">5</div>
+        <input type="range" min="1" max="10" value="5" id="w-energy" oninput="updateSlider(this,'w-energy-val','w-energy-display',10)">
+        <span class="slider-val" id="w-energy-val">5</span>
       </div>
       <div class="signal-card">
         <div class="signal-name">2. Average Sleep Quality</div>
-        <div class="slider-row">
-          <span class="text-sm">Terrible</span>
-          <input type="range" min="1" max="10" value="7" id="w-sleep" oninput="document.getElementById('w-sleep-val').textContent=this.value">
-          <span class="text-sm">Excellent</span>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">
+          <span class="text-sm">Terrible → Excellent</span>
+          <span class="slider-readout" id="w-sleep-display">7/10</span>
         </div>
-        <div style="text-align:center;margin-top:3px;font-family:'DM Serif Display',serif;font-size:23px;color:var(--navy)" id="w-sleep-val">7</div>
+        <input type="range" min="1" max="10" value="7" id="w-sleep" oninput="updateSlider(this,'w-sleep-val','w-sleep-display',10)">
+        <span class="slider-val" id="w-sleep-val">7</span>
       </div>
       <div class="signal-card">
         <div class="signal-name">3. Average Hunger Level</div>
-        <div class="slider-row">
-          <span class="text-sm">Never hungry</span>
-          <input type="range" min="1" max="10" value="5" id="w-hunger" oninput="document.getElementById('w-hunger-val').textContent=this.value">
-          <span class="text-sm">Ravenous</span>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">
+          <span class="text-sm">Never → Ravenous</span>
+          <span class="slider-readout" id="w-hunger-display">5/10</span>
         </div>
-        <div style="text-align:center;margin-top:3px;font-family:'DM Serif Display',serif;font-size:23px;color:var(--navy)" id="w-hunger-val">5</div>
+        <input type="range" min="1" max="10" value="5" id="w-hunger" oninput="updateSlider(this,'w-hunger-val','w-hunger-display',10)">
+        <span class="slider-val" id="w-hunger-val">5</span>
       </div>
       <div class="signal-card">
         <div class="signal-name">4. Gym Performance</div>
-        <select id="w-strength">
-          <option value="up">Weights went up on most exercises</option>
-          <option value="same" selected>Weights stayed the same</option>
-          <option value="down">Weights went down</option>
-          <option value="skipped">Missed most sessions</option>
-        </select>
+        <select id="w-strength"><option value="up">Weights went up on most exercises</option><option value="same" selected>Weights stayed the same</option><option value="down">Weights went down</option><option value="skipped">Missed most sessions</option></select>
       </div>
       <div class="signal-card">
-        <div class="signal-name">5. Digestion & Bloating</div>
-        <select id="w-digestion">
-          <option value="great">Great — no issues</option>
-          <option value="ok" selected>OK — minor bloating</option>
-          <option value="poor">Poor — significant issues</option>
-        </select>
+        <div class="signal-name">5. Digestion &amp; Bloating</div>
+        <select id="w-digestion"><option value="great">Great — no issues</option><option value="ok" selected>OK — minor bloating</option><option value="poor">Poor — significant issues</option></select>
       </div>
       <div class="signal-card">
         <div class="signal-name">6. Mirror Check</div>
-        <select id="w-look">
-          <option value="tighter">Fuller and tighter</option>
-          <option value="same" selected>About the same</option>
-          <option value="softer">Softer and flatter</option>
-          <option value="watery">Watery and inflamed</option>
-        </select>
+        <select id="w-look"><option value="tighter">Fuller and tighter</option><option value="same" selected>About the same</option><option value="softer">Softer and flatter</option><option value="watery">Watery and inflamed</option></select>
       </div>
       <div class="signal-card">
         <div class="signal-name">7. Current Phase</div>
-        <select id="w-phase">
-          <option value="1">Phase 1 — Metabolic Restoration</option>
-          <option value="2">Phase 2 — Fat Loss</option>
-          <option value="3">Phase 3 — Mini Restoration</option>
-        </select>
+        <select id="w-phase"><option value="1">Phase 1 — Metabolic Restoration</option><option value="2">Phase 2 — Fat Loss</option><option value="3">Phase 3 — Mini Restoration</option></select>
       </div>
       <input type="hidden" id="weekly-edit-idx" value="">
       <button class="btn btn-primary mt-12" onclick="calculateWeekly()">Get My Recommendation</button>
-      <div id="weeklyDecision" style="display:none;margin-top:14px"></div>
+      <div id="weeklyDecision" style="display:none;margin-top:12px"></div>
     </div>
   </div>
-
-  <!-- Carb tracker tab -->
   <div id="weekly-tab-carbtrack" style="display:none">
     <div class="card">
       <div class="card-title">Phase 1 Carb Increase Tracker</div>
-      <div class="text-sm mb-12">Track your weekly carb target as you add 25-50g per week during Phase 1. Tap a week to update its target.</div>
+      <div class="text-sm mb-12">Track your weekly carb target as you add 25-50g per week during Phase 1.</div>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-        <div>
-          <div style="font-size:16px;font-weight:600;color:var(--navy)">Current Week Target</div>
-          <div style="font-family:'DM Serif Display',serif;font-size:31px;color:var(--gold)" id="currentCarbTarget">175g</div>
-        </div>
-        <div style="text-align:right">
-          <div style="font-size:23px;color:var(--text-light)">Next week suggestion</div>
-          <div style="font-size:25px;font-weight:600;color:var(--navy)" id="nextCarbTarget">+25-50g</div>
-        </div>
+        <div><div style="font-size:13px;font-weight:700;color:var(--ink)">Current Week Target</div><div style="font-size:30px;font-weight:900;color:var(--accent);letter-spacing:-1px" id="currentCarbTarget">175g</div></div>
+        <div style="text-align:right"><div class="text-sm">Next week suggestion</div><div style="font-size:16px;font-weight:800;color:var(--ink)" id="nextCarbTarget">+25-50g</div></div>
       </div>
       <div class="row-2" style="margin-bottom:12px">
         <button class="btn btn-outline btn-sm" onclick="adjustCarbWeek(-25)">− 25g</button>
         <button class="btn btn-gold btn-sm" onclick="adjustCarbWeek(+25)">+ 25g</button>
       </div>
-      <button class="btn btn-primary btn-sm" style="width:100%;margin-bottom:14px" onclick="advanceCarbWeek()">Mark Week Complete → Add to History</button>
+      <button class="btn btn-primary btn-sm" style="width:100%;margin-bottom:12px" onclick="advanceCarbWeek()">Mark Week Complete → Add to History</button>
       <div class="section-header">Week-by-Week History</div>
       <div id="carbWeekHistory"><div class="text-sm">No weeks recorded yet.</div></div>
     </div>
   </div>
-
-  <!-- History tab -->
   <div id="weekly-tab-history" style="display:none">
     <div class="card">
       <div class="card-title">Weight History</div>
@@ -556,14 +664,12 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;hei
     <button class="tab-btn" onclick="showProgressTab('workouts',this)">Training</button>
     <button class="tab-btn" onclick="showProgressTab('steps',this)">Steps</button>
   </div>
-
-  <!-- Body tab -->
   <div id="progress-tab-body">
     <div class="card">
       <div class="card-title">Body Composition</div>
       <div class="phase-tracker" id="goalProgress"></div>
       <div id="goalStatus" class="text-sm mb-12"></div>
-      <div class="row-2" style="margin-bottom:14px">
+      <div class="row-2" style="margin-bottom:12px">
         <div class="macro-box"><div class="val" id="prog-current-weight">—</div><div class="lbl">Current Weight</div><div class="tgt">7-day avg</div></div>
         <div class="macro-box"><div class="val" id="prog-lost">—</div><div class="lbl">Total Lost</div><div class="tgt">from 273 lbs</div></div>
       </div>
@@ -576,16 +682,14 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;hei
       <div id="sevenDayStats"><div class="text-sm">Log daily check-ins to see averages.</div></div>
     </div>
   </div>
-
-  <!-- Labs tab -->
   <div id="progress-tab-labs" style="display:none">
     <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
         <div class="card-title" style="margin:0">Lab Results</div>
         <button class="btn btn-gold btn-sm" onclick="openLogLab()">+ Add Result</button>
       </div>
-      <div class="text-sm mb-12">Track your key markers over time. Discuss trends with your doctors.</div>
-      <div id="labResults"><div class="empty-state"><div class="icon">🔬</div><p>No lab results yet.<br>Add your March 2026 baseline to start tracking.</p></div></div>
+      <div class="text-sm mb-12">Track your key markers over time.</div>
+      <div id="labResults"><div class="empty-state"><div class="icon">🔬</div><p>No lab results yet.</p></div></div>
     </div>
     <div class="card">
       <div class="card-title">Symptom History</div>
@@ -593,26 +697,20 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;hei
       <div id="symptomHistory"><div class="text-sm">Log daily symptoms to see patterns here.</div></div>
     </div>
   </div>
-
-  <!-- Workouts tab -->
   <div id="progress-tab-workouts" style="display:none">
     <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
         <div class="card-title" style="margin:0">Training Log</div>
         <button class="btn btn-gold btn-sm" onclick="openLogWorkout()">+ Workout</button>
       </div>
       <div id="workoutLog"><div class="empty-state"><div class="icon">💪</div><p>No workouts logged yet.</p></div></div>
     </div>
   </div>
-
-  <!-- Steps tab -->
   <div id="progress-tab-steps" style="display:none">
     <div class="card">
       <div class="card-title">Step History</div>
-      <div style="margin-bottom:6px;font-size:23px;color:var(--text-light)">Last 7 days vs. goal</div>
-      <div style="position:relative;padding-bottom:20px">
-        <div class="steps-bar" id="stepsBar"></div>
-      </div>
+      <div style="margin-bottom:6px" class="text-sm">Last 7 days vs. goal</div>
+      <div style="position:relative;padding-bottom:20px"><div class="steps-bar" id="stepsBar"></div></div>
       <div id="stepsStats" class="text-sm mt-12"></div>
     </div>
     <div class="card">
@@ -628,58 +726,38 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;hei
     <button class="tab-btn active" onclick="showMedicalTab('meds',this)">Medications</button>
     <button class="tab-btn" onclick="showMedicalTab('doctors',this)">Doctor Notes</button>
   </div>
-
   <div id="medical-tab-meds">
     <div class="card">
       <div class="card-title">Medication Overview</div>
-      <div style="padding:10px 0;border-bottom:1px solid var(--border)">
+      <div style="padding:10px 0;border-bottom:1px solid var(--rule)">
         <div style="display:flex;justify-content:space-between"><div class="med-name">Zepbound (Tirzepatide)</div><span class="badge badge-navy">12.5mg</span></div>
         <div class="med-sub">Weekly injection · GLP-1/GIP agonist</div>
-        <div class="form-group mt-12" style="margin-bottom:0">
-          <label>Next injection date</label>
-          <input type="date" id="zepbound-next" onchange="saveZepboundDate()">
-        </div>
+        <div class="form-group mt-12" style="margin-bottom:0"><label>Next injection date</label><input type="date" id="zepbound-next" onchange="saveZepboundDate()"></div>
       </div>
-      <div style="padding:10px 0;border-bottom:1px solid var(--border)">
+      <div style="padding:10px 0;border-bottom:1px solid var(--rule)">
         <div class="med-name">Enclomiphene · Anastrozole · Methylcobalamin B12</div>
         <div class="med-sub">Combined pill · Monday, Wednesday, Friday only</div>
-        <div style="display:flex;gap:6px;margin-top:7px">
-          <span style="background:var(--cream);border-radius:12px;padding:3px 10px;font-size:12px;font-weight:600;color:var(--navy)">Mon</span>
-          <span style="background:var(--cream);border-radius:12px;padding:3px 10px;font-size:12px;font-weight:600;color:var(--navy)">Wed</span>
-          <span style="background:var(--cream);border-radius:12px;padding:3px 10px;font-size:12px;font-weight:600;color:var(--navy)">Fri</span>
+        <div style="display:flex;gap:5px;margin-top:6px">
+          <span style="background:rgba(198,242,78,0.15);border:1px solid rgba(198,242,78,0.3);border-radius:6px;padding:3px 9px;font-size:10px;font-weight:800;color:var(--accent);font-family:ui-monospace,monospace">MON</span>
+          <span style="background:rgba(198,242,78,0.15);border:1px solid rgba(198,242,78,0.3);border-radius:6px;padding:3px 9px;font-size:10px;font-weight:800;color:var(--accent);font-family:ui-monospace,monospace">WED</span>
+          <span style="background:rgba(198,242,78,0.15);border:1px solid rgba(198,242,78,0.3);border-radius:6px;padding:3px 9px;font-size:10px;font-weight:800;color:var(--accent);font-family:ui-monospace,monospace">FRI</span>
         </div>
-        <div style="margin-top:7px;font-size:12px;color:var(--text-light)">Enclomiphene: SERM · Anastrozole: aromatase inhibitor — watch for low estradiol · B12: active form</div>
+        <div style="margin-top:6px;font-size:11px;color:var(--sub)">Enclomiphene: SERM · Anastrozole: aromatase inhibitor — watch for low estradiol · B12: active form</div>
       </div>
-      <div class="decision-box amber mt-12">
-        <div class="decision-title">⚠️ Estradiol Watch</div>
-        <div class="decision-text">Current estradiol (10.0 pg/mL) is near the low end. Monitor for joint pain, mood changes, low libido, or poor sleep. Log symptoms daily and flag patterns to Dr. Movassaghi.</div>
-      </div>
-      <div class="decision-box amber mt-12">
-        <div class="decision-title">⚠️ SHBG Rising</div>
-        <div class="decision-text">SHBG rose 33% (35→46.4) in 3 months, suppressing free testosterone. Phase 1 metabolic restoration should help normalize this. Track at next labs.</div>
-      </div>
+      <div class="decision-box amber mt-12"><div class="decision-title">⚠ ESTRADIOL WATCH</div><div class="decision-text">Current estradiol (10.0 pg/mL) is near the low end. Monitor for joint pain, mood changes, low libido, or poor sleep.</div></div>
+      <div class="decision-box amber mt-12"><div class="decision-title">⚠ SHBG RISING</div><div class="decision-text">SHBG rose 33% (35→46.4) in 3 months, suppressing free testosterone. Phase 1 metabolic restoration should help normalize this.</div></div>
     </div>
   </div>
-
   <div id="medical-tab-doctors" style="display:none">
     <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
         <div class="card-title" style="margin:0">Doctor Notes</div>
         <button class="btn btn-gold btn-sm" onclick="openAddDoctorNote()">+ Note</button>
       </div>
       <div class="text-sm mb-12">Log pre-appointment talking points and post-appointment outcomes.</div>
-
-      <div class="decision-box green" style="margin-bottom:14px">
-        <div class="decision-title">Dr. Shafipour — Next Appointment Topics</div>
-        <div class="decision-text">• Discuss temporary Zepbound dose reduction during Phase 1<br>• Request Free T3 + Free T4 added to next draw<br>• Request morning cortisol baseline<br>• SHBG rose 33% — discuss impact on free testosterone</div>
-      </div>
-
-      <div class="decision-box green" style="margin-bottom:14px">
-        <div class="decision-title">Dr. Movassaghi — Next Appointment Topics</div>
-        <div class="decision-text">• Estradiol at 10.0 — anastrozole may be too aggressive<br>• Free testosterone trending down (11.4→10.5)<br>• SHBG rising fast — discuss enclomiphene dose<br>• Starting resistance training program — will support natural T</div>
-      </div>
-
-      <div id="doctorNotes"><div class="text-sm">No personal notes yet. Tap + Note to add.</div></div>
+      <div class="decision-box green" style="margin-bottom:12px"><div class="decision-title">Dr. Shafipour — Next Appointment</div><div class="decision-text">• Discuss temporary Zepbound dose reduction during Phase 1<br>• Request Free T3 + Free T4 added to next draw<br>• Request morning cortisol baseline<br>• SHBG rose 33% — discuss impact on free testosterone</div></div>
+      <div class="decision-box green" style="margin-bottom:12px"><div class="decision-title">Dr. Movassaghi — Next Appointment</div><div class="decision-text">• Estradiol at 10.0 — anastrozole may be too aggressive<br>• Free testosterone trending down (11.4→10.5)<br>• SHBG rising fast — discuss enclomiphene dose<br>• Starting resistance training program — will support natural T</div></div>
+      <div id="doctorNotes"><div class="text-sm">No personal notes yet.</div></div>
     </div>
   </div>
 </div>
@@ -688,8 +766,7 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;hei
 <div class="screen" id="screen-settings">
   <div class="card">
     <div class="card-title">Your Profile</div>
-    <div class="form-group">
-      <label>Current Phase</label>
+    <div class="form-group"><label>Current Phase</label>
       <select id="settings-phase" onchange="saveSettings()">
         <option value="1">Phase 1 — Metabolic Restoration</option>
         <option value="2">Phase 2 — Strategic Fat Loss</option>
@@ -697,14 +774,8 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;hei
       </select>
     </div>
     <div class="row-2">
-      <div class="form-group">
-        <label>Starting Weight (lbs)</label>
-        <input type="number" id="settings-start-weight" placeholder="273" oninput="saveSettings()">
-      </div>
-      <div class="form-group">
-        <label>Current Week #</label>
-        <input type="number" id="settings-week" placeholder="1" min="1" oninput="saveSettings()">
-      </div>
+      <div class="form-group"><label>Starting Weight (lbs)</label><input type="number" id="settings-start-weight" placeholder="273" oninput="saveSettings()"></div>
+      <div class="form-group"><label>Current Week #</label><input type="number" id="settings-week" placeholder="1" min="1" oninput="saveSettings()"></div>
     </div>
   </div>
   <div class="card">
@@ -722,15 +793,12 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;hei
   <div class="card">
     <div class="card-title">AI Meal Analysis</div>
     <div class="text-sm mb-12">Upload a meal photo and Claude AI estimates your macros automatically.</div>
-    <div class="form-group">
-      <label>Anthropic API Key</label>
-      <input type="text" id="settings-apikey" placeholder="sk-ant-..." oninput="saveSettings()">
-    </div>
-    <div class="text-sm">Stored locally on this device only. Get yours at console.anthropic.com</div>
+    <div class="form-group"><label>Anthropic API Key</label><input type="text" id="settings-apikey" placeholder="sk-ant-..." oninput="saveSettings()"></div>
+    <div class="text-sm">Stored locally on this device only.</div>
   </div>
   <div class="card">
-    <div class="card-title">☁️ Cloud Sync</div>
-    <div class="text-sm mb-12">Data syncs automatically. Use Force Sync if this device is missing data from another device.</div>
+    <div class="card-title">Cloud Sync</div>
+    <div class="text-sm mb-12">Data syncs automatically. Use Force Sync if this device is missing data.</div>
     <button class="btn btn-primary mb-12" onclick="forceSync()">Force Sync from Cloud</button>
   </div>
   <div class="card">
@@ -743,22 +811,22 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;hei
 <!-- ===================== BOTTOM NAV ===================== -->
 <nav class="bottom-nav">
   <button class="nav-btn active" onclick="showScreen('today',this)">
-    <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Today
+    <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>TODAY
   </button>
   <button class="nav-btn" onclick="showScreen('meals',this)">
-    <svg viewBox="0 0 24 24"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>Meals
+    <svg viewBox="0 0 24 24"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>MEALS
   </button>
   <button class="nav-btn" onclick="showScreen('weekly',this)">
-    <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Weekly
+    <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>WEEKLY
   </button>
   <button class="nav-btn" onclick="showScreen('progress',this)">
-    <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Progress
+    <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>PROGRESS
   </button>
   <button class="nav-btn" onclick="showScreen('medical',this)">
-    <svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>Medical
+    <svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>MEDICAL
   </button>
   <button class="nav-btn" onclick="showScreen('settings',this)">
-    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>Settings
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>SETTINGS
   </button>
 </nav>
 
@@ -913,29 +981,105 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;hei
 
 <div class="toast" id="toast"></div>
 
-<!-- FAVORITES MODAL -->
-<div class="modal-overlay" id="favModal">
-  <div class="modal-sheet">
-    <div class="modal-handle"></div>
-    <div class="modal-title" id="favModalTitle">Add Favorite</div>
-    <input type="hidden" id="fav-edit-id" value="">
-    <input type="hidden" id="fav-is-builtin" value="">
-    <div class="form-group"><label>Name</label><input type="text" id="fav-name" placeholder="e.g. Panda Express Teriyaki Plate"></div>
-    <div class="form-group"><label>Emoji (optional)</label><input type="text" id="fav-emoji" placeholder="🍽" maxlength="2" style="width:60px;display:inline-block"></div>
-    <div class="row-3">
-      <div class="form-group"><label>Protein (g)</label><input type="number" id="fav-protein" placeholder="0"></div>
-      <div class="form-group"><label>Carbs (g)</label><input type="number" id="fav-carbs" placeholder="0"></div>
-      <div class="form-group"><label>Fat (g)</label><input type="number" id="fav-fat" placeholder="0"></div>
-    </div>
-    <div class="form-group"><label>Notes / Description</label><textarea id="fav-notes" placeholder="Ingredients, restaurant, prep notes..." style="min-height:60px"></textarea></div>
-    <div class="row-2" id="fav-btn-row">
-      <button class="btn btn-outline" onclick="closeFavModal()">Cancel</button>
-      <button class="btn btn-primary" onclick="saveFavModal(false)">Save Favorite</button>
-    </div>
-  </div>
-</div>
-
 <script>
+// ============ THEME ============
+function setTheme(t){
+  document.documentElement.setAttribute('data-theme',t);
+  localStorage.setItem('mos-theme',t);
+  document.getElementById('theme-dark').classList.toggle('active',t==='dark');
+  document.getElementById('theme-light').classList.toggle('active',t==='light');
+  var bg = t==='dark' ? '#14161a' : '#ffffff';
+  document.body.style.background = bg;
+  document.documentElement.style.background = bg;
+}
+(function(){setTheme(localStorage.getItem('mos-theme')||'dark');})();
+
+// ============ SLIDER HELPER — FIX 6 ============
+// Updates the hidden slider-val span (for JS compat), the display readout,
+// and the accent-filled gradient background of the range input.
+function updateSlider(input, legacyId, displayId, max){
+  var v = +input.value;
+  var pct = ((v - +input.min) / ((+input.max||max) - +input.min)) * 100;
+  input.style.background = 'linear-gradient(to right,var(--accent) 0%,var(--accent) '+pct+'%,var(--surface-2) '+pct+'%,var(--surface-2) 100%)';
+  var leg = document.getElementById(legacyId);
+  if(leg) leg.textContent = v;
+  var disp = document.getElementById(displayId);
+  if(disp) disp.textContent = v+'/'+(+input.max||max);
+}
+// Init all sliders on load
+function initSliders(){
+  var sliders = [
+    {id:'daily-energy',   leg:'energy-val',   disp:'energy-display'},
+    {id:'daily-hunger',   leg:'hunger-val',   disp:'hunger-display'},
+    {id:'daily-sleep',    leg:'sleep-val',    disp:'sleep-display'},
+    {id:'w-energy',       leg:'w-energy-val', disp:'w-energy-display'},
+    {id:'w-sleep',        leg:'w-sleep-val',  disp:'w-sleep-display'},
+    {id:'w-hunger',       leg:'w-hunger-val', disp:'w-hunger-display'},
+  ];
+  sliders.forEach(function(s){
+    var el = document.getElementById(s.id);
+    if(el) updateSlider(el, s.leg, s.disp, 10);
+  });
+}
+
+// ============ FAVORITES BAR RENDERER ============
+function renderFavBar(){
+  var favs = getFavorites ? getFavorites() : [];
+  var scroll = document.getElementById('favBarScroll');
+  if(!scroll) return;
+  scroll.innerHTML = '';
+  favs.slice(0,12).forEach(function(f){
+    var chip = document.createElement('div');
+    chip.className = 'fav-chip';
+    chip.innerHTML = '<div class="fav-chip-emoji">'+(f.emoji||'🍽')+'</div>'+
+      '<div class="fav-chip-name">'+f.name.split(' ')[0]+'</div>'+
+      '<div class="fav-chip-macro">'+f.protein+'p</div>';
+    chip.addEventListener('click', function(){ quickLogFavorite(f.id); });
+    scroll.appendChild(chip);
+  });
+}
+
+// ============ MACRO BAR CHART UPDATER — FIX 4 ============
+function updateMacroCharts(totals, s){
+  var cols = [
+    {key:'protein', fillId:'macro-fill-protein', readId:'macro-readout-protein', tgtId:'tgt-protein', val:totals.protein, tgt:s.protein, sfx:'g'},
+    {key:'carbs',   fillId:'macro-fill-carbs',   readId:'macro-readout-carbs',   tgtId:'tgt-carbs',   val:totals.carbs,   tgt:s.carbs,   sfx:'g'},
+    {key:'fat',     fillId:'macro-fill-fat',      readId:'macro-readout-fat',     tgtId:'tgt-fat',     val:totals.fat,     tgt:s.fat,     sfx:'g'},
+    {key:'cal',     fillId:'macro-fill-cal',      readId:'macro-readout-cal',     tgtId:'tgt-cal',     val:totals.calories,tgt:s.calories,sfx:''},
+  ];
+  cols.forEach(function(c){
+    var pct = c.tgt > 0 ? Math.min(100, (c.val/c.tgt)*100) : 0;
+    var fill = document.getElementById(c.fillId);
+    var read = document.getElementById(c.readId);
+    var tgtEl = document.getElementById(c.tgtId);
+    if(fill){
+      fill.style.height = pct+'%';
+      var isOver = c.val > c.tgt * 1.05;
+      var base = c.key==='protein'?'protein':c.key==='cal'?'kcal':(c.key==='carbs'||c.key==='fat')?'carbs':'carbs';
+      fill.className = 'macro-bar-fill '+(isOver?'over':base);
+    }
+    if(read) read.innerHTML = Math.round(c.val)+'/<span id="'+c.tgtId+'">'+c.tgt+'</span>'+c.sfx;
+    // Also keep the hidden tgt-* spans updated
+    // tgtId is already inside the readout, but the hidden prog-hidden ones still need updating
+    var hiddenTgt = document.querySelector('.prog-hidden #'+c.tgtId);
+    if(hiddenTgt) hiddenTgt.textContent = c.tgt;
+  });
+}
+
+
+// ============ THEME ============
+function setTheme(t) {
+  document.documentElement.setAttribute('data-theme', t);
+  localStorage.setItem('mos-theme', t);
+  document.getElementById('theme-dark').classList.toggle('active', t === 'dark');
+  document.getElementById('theme-light').classList.toggle('active', t === 'light');
+}
+(function() {
+  var t = localStorage.getItem('mos-theme') || 'dark';
+  setTheme(t);
+})();
+
+
 // ============ DATA LAYER ============
 const _FBP = 'metabolicos-9c0bf';
 const _FBK = 'AIzaSyCE5xMGqLZq-NlbJZhs6RlrnfJkg-YfZ9Y';
@@ -2101,6 +2245,50 @@ function init(){
     if(todayEl)todayEl.scrollIntoView({behavior:'auto',block:'nearest',inline:'center'});
   },100);
 }
+// ============ PATCH refreshToday TO DRIVE BAR CHARTS ============
+// Wrap the existing refreshToday to also update the bar charts and fav bar
+var _origRefreshToday = refreshToday;
+refreshToday = function(){
+  _origRefreshToday.apply(this, arguments);
+  var s = getSettings();
+  var today = todayKey();
+  var viewDate = _viewingDate || today;
+  var meals = (DB.get('meals')||[]).filter(function(m){return (m.date||today)===viewDate;});
+  var totals = meals.reduce(function(acc,m){return{protein:acc.protein+m.protein,carbs:acc.carbs+m.carbs,fat:acc.fat+m.fat,calories:acc.calories+m.calories};},{protein:0,carbs:0,fat:0,calories:0});
+  updateMacroCharts(totals, s);
+  renderFavBar();
+  initSliders();
+};
+
+// ============ PATCH renderMealItem FOR FIX 10 ============
+var _origRenderMealItem = renderMealItem;
+renderMealItem = function(m){
+  var icons={breakfast:'🌅',lunch:'☀️',snack:'🍎',dinner:'🌙',other:'🍽'};
+  var thumb = m.photo
+    ? '<div class="meal-thumb"><img src="'+m.photo+'" alt=""></div>'
+    : '<div class="meal-thumb">'+(icons[m.type]||'🍽')+'</div>';
+  var noteHtml = m.notes ? '<div style="font-size:11px;color:var(--sub);margin-top:2px">'+m.notes+'</div>' : '';
+  return '<div class="meal-item">'+thumb+
+    '<div class="meal-info">'+
+      '<div class="meal-name">'+m.name+'</div>'+
+      '<div class="meal-macros">'+m.protein+'g P · '+m.carbs+'g C · '+m.fat+'g F · '+m.calories+' cal</div>'+
+      noteHtml+
+      '<div class="meal-actions">'+
+        '<button class="meal-edit-btn" onclick="openLogMeal('+m.id+')">Edit</button>'+
+        '<button class="meal-del-btn" onclick="deleteMeal('+m.id+')">Delete</button>'+
+      '</div>'+
+    '</div>'+
+    '<div style="font-size:10px;color:var(--sub);font-family:ui-monospace,monospace;flex-shrink:0">'+( m.time||'')+'</div>'+
+  '</div>';
+};
+
+// ============ PATCH loadTodayCheckin TO RESTORE SLIDER GRADIENTS ============
+var _origLoadTodayCheckin = loadTodayCheckin;
+loadTodayCheckin = function(){
+  _origLoadTodayCheckin.apply(this, arguments);
+  initSliders();
+};
+
 init();
 
 // Sync from Firebase in background after app is rendered
@@ -2122,6 +2310,39 @@ setTimeout(function() {
     }, 30000);
   });
 }, 500);
+
+
+
+
+
+// ============ DRAG TO SCROLL (desktop) ============
+function enableDragScroll(el) {
+  if (!el) return;
+  var isDown = false, startX, scrollLeft;
+  el.addEventListener('mousedown', function(e) {
+    isDown = true;
+    el.style.cursor = 'grabbing';
+    startX = e.pageX - el.offsetLeft;
+    scrollLeft = el.scrollLeft;
+    e.preventDefault();
+  });
+  el.addEventListener('mouseleave', function() { isDown = false; el.style.cursor = 'grab'; });
+  el.addEventListener('mouseup', function() { isDown = false; el.style.cursor = 'grab'; });
+  el.addEventListener('mousemove', function(e) {
+    if (!isDown) return;
+    e.preventDefault();
+    var x = e.pageX - el.offsetLeft;
+    el.scrollLeft = scrollLeft - (x - startX);
+  });
+}
+// Init drag scroll on all scrollable rows
+(function() {
+  enableDragScroll(document.getElementById('streakBar'));
+  enableDragScroll(document.getElementById('favBarScroll'));
+  enableDragScroll(document.querySelector('.fav-scroll'));
+})();
+
 </script>
+</div><!-- #app -->
 </body>
 </html>
